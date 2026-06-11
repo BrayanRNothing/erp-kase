@@ -12,7 +12,7 @@ export function UsersSection({ title }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/users', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -36,7 +36,7 @@ export function UsersSection({ title }) {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:3001/api/users', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
