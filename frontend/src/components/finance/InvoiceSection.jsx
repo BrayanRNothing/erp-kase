@@ -1,0 +1,949 @@
+import React, { useState } from 'react';
+import { Document, Page, Text, View, StyleSheet, PDFViewer, PDFDownloadLink, Image as PdfImage, pdf } from '@react-pdf/renderer';
+import { Plus, Trash2, Upload, Download, FileText, Eye, Settings, ImageIcon, CheckCircle2, LayoutTemplate, ArrowRight, FolderLock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useFinance } from '../../context/FinanceContext';
+import { useActivity, ACTIVITY_TYPES } from '../../context/ActivityContext';
+
+import LogoCarribean from '../../assets/carribeanenergysolutionslogo.png';
+import LogoInfiniguard from '../../assets/infiniguardlogo.png';
+
+// --- STANDARD STYLES ---
+const stdStyles = StyleSheet.create({
+  page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 40 },
+  logoSection: { width: '40%' },
+  logo: { width: 100, height: 'auto', marginBottom: 10 },
+  companyName: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 4 },
+  companyDetails: { fontSize: 10, color: '#4b5563', lineHeight: 1.5 },
+  invoiceTitleSection: { width: '50%', alignItems: 'flex-end' },
+  title: { fontSize: 32, fontWeight: 'bold', color: '#111827', letterSpacing: 1, marginBottom: 10 },
+  invoiceMeta: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
+  metaLabel: { fontSize: 10, color: '#6b7280', width: 60, textAlign: 'right', paddingRight: 8 },
+  metaValue: { fontSize: 10, color: '#111827', fontWeight: 'bold', width: 80, textAlign: 'right' },
+  billToSection: { marginBottom: 40 },
+  billToLabel: { fontSize: 10, color: '#6b7280', textTransform: 'uppercase', marginBottom: 6 },
+  clientName: { fontSize: 14, fontWeight: 'bold', color: '#111827', marginBottom: 4 },
+  clientDetails: { fontSize: 10, color: '#4b5563', lineHeight: 1.5 },
+  table: { width: '100%', marginBottom: 30 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#f3f4f6', padding: 8, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  thDesc: { width: '50%', fontSize: 10, fontWeight: 'bold', color: '#374151' },
+  thQty: { width: '15%', fontSize: 10, fontWeight: 'bold', color: '#374151', textAlign: 'center' },
+  thPrice: { width: '20%', fontSize: 10, fontWeight: 'bold', color: '#374151', textAlign: 'right' },
+  thTotal: { width: '15%', fontSize: 10, fontWeight: 'bold', color: '#374151', textAlign: 'right' },
+  tableRow: { flexDirection: 'row', padding: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  tdDesc: { width: '50%', fontSize: 10, color: '#111827' },
+  tdQty: { width: '15%', fontSize: 10, color: '#4b5563', textAlign: 'center' },
+  tdPrice: { width: '20%', fontSize: 10, color: '#4b5563', textAlign: 'right' },
+  tdTotal: { width: '15%', fontSize: 10, color: '#111827', textAlign: 'right', fontWeight: 'bold' },
+  totalsSection: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 },
+  totalsBlock: { width: '40%' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  totalLabel: { fontSize: 10, color: '#6b7280' },
+  totalValue: { fontSize: 10, color: '#111827' },
+  grandTotalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, marginTop: 4, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  grandTotalLabel: { fontSize: 12, fontWeight: 'bold', color: '#111827' },
+  grandTotalValue: { fontSize: 12, fontWeight: 'bold', color: '#10b981' },
+  footer: { position: 'absolute', bottom: 40, left: 40, right: 40, borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 10 },
+  footerText: { fontSize: 9, color: '#9ca3af', textAlign: 'center' }
+});
+
+// --- INFINIGUARD STYLES ---
+const infStyles = StyleSheet.create({
+  page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  logoSection: { width: '55%' },
+  logo: { width: 140, height: 'auto', marginBottom: 10 },
+  companyName: { fontSize: 10, fontWeight: 'bold', color: '#333', marginBottom: 2 },
+  companyDetails: { fontSize: 9, color: '#333', lineHeight: 1.4 },
+  tagline: { fontSize: 9, color: '#333', marginTop: 15, marginBottom: 20 },
+  invoiceTitleSection: { width: '45%', alignItems: 'flex-end' },
+  title: { fontSize: 32, color: '#111', marginBottom: 5, letterSpacing: 0.5 },
+  invNumber: { fontSize: 10, fontWeight: 'bold', color: '#333', marginBottom: 20 },
+  balanceLabelTitle: { fontSize: 9, fontWeight: 'bold', color: '#333', marginBottom: 3 },
+  balanceAmountTitle: { fontSize: 14, fontWeight: 'bold', color: '#111' },
+
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  billToBlock: { width: '30%' },
+  shipToBlock: { width: '30%' },
+  billToLabel: { fontSize: 10, color: '#333', marginBottom: 4 },
+  clientName: { fontSize: 10, fontWeight: 'bold', color: '#111', marginBottom: 2 },
+  clientDetails: { fontSize: 9, color: '#333', lineHeight: 1.4 },
+
+  metaBlock: { width: '40%', alignItems: 'flex-end', justifyContent: 'flex-end' },
+  metaRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 6 },
+  metaLabel: { fontSize: 9, color: '#333', width: 90, textAlign: 'right', paddingRight: 5 },
+  metaValue: { fontSize: 9, color: '#111', width: 80, textAlign: 'right' },
+
+  table: { width: '100%', marginBottom: 20 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#333', paddingVertical: 6, paddingHorizontal: 4 },
+  thHash: { width: '5%', fontSize: 9, color: '#fff', textAlign: 'center' },
+  thDesc: { width: '50%', fontSize: 9, color: '#fff' },
+  thQty: { width: '15%', fontSize: 9, color: '#fff', textAlign: 'right' },
+  thRate: { width: '15%', fontSize: 9, color: '#fff', textAlign: 'right' },
+  thAmount: { width: '15%', fontSize: 9, color: '#fff', textAlign: 'right' },
+
+  tableRow: { flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  tdHash: { width: '5%', fontSize: 9, color: '#333', textAlign: 'center' },
+  tdDesc: { width: '50%', fontSize: 9, color: '#333', lineHeight: 1.4 },
+  tdQty: { width: '15%', fontSize: 9, color: '#333', textAlign: 'right' },
+  tdRate: { width: '15%', fontSize: 9, color: '#333', textAlign: 'right' },
+  tdAmount: { width: '15%', fontSize: 9, color: '#333', textAlign: 'right' },
+
+  totalsSection: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5, marginBottom: 30 },
+  totalsBlock: { width: '40%' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, paddingHorizontal: 5 },
+  totalLabel: { fontSize: 9, color: '#333' },
+  totalValue: { fontSize: 9, color: '#111' },
+  totalRowBold: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, paddingHorizontal: 5 },
+  totalLabelBold: { fontSize: 9, fontWeight: 'bold', color: '#111' },
+  totalValueBold: { fontSize: 9, fontWeight: 'bold', color: '#111' },
+  balanceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, paddingHorizontal: 5, backgroundColor: '#f3f4f6' },
+
+  bottomSection: { flexDirection: 'column', gap: 10 },
+  notesTitle: { fontSize: 10, color: '#333', marginBottom: 4 },
+  notesText: { fontSize: 9, color: '#333', lineHeight: 1.4 },
+
+  termsSection: { position: 'absolute', bottom: 40, left: 40, right: 40 },
+  termsTitle: { fontSize: 10, color: '#333', marginBottom: 4 },
+  termsText: { fontSize: 9, color: '#333' }
+});
+
+
+// --- STANDARD TEMPLATE COMPONENT ---
+const StandardTemplate = ({ data, subtotal, taxAmount, total }) => (
+  <Page size="A4" style={stdStyles.page}>
+    <View style={stdStyles.header}>
+      <View style={stdStyles.logoSection}>
+        {data.logo && <PdfImage src={data.logo} style={stdStyles.logo} />}
+        <Text style={stdStyles.companyName}>{data.companyName || 'Tu Empresa'}</Text>
+        <Text style={stdStyles.companyDetails}>{data.companyAddress}</Text>
+        <Text style={stdStyles.companyDetails}>{data.companyEmail}</Text>
+        <Text style={stdStyles.companyDetails}>{data.companyPhone}</Text>
+      </View>
+      <View style={stdStyles.invoiceTitleSection}>
+        <Text style={stdStyles.title}>INVOICE</Text>
+        <View style={stdStyles.invoiceMeta}>
+          <Text style={stdStyles.metaLabel}>INVOICE #:</Text>
+          <Text style={stdStyles.metaValue}>{data.invoiceNumber || '---'}</Text>
+        </View>
+        <View style={stdStyles.invoiceMeta}>
+          <Text style={stdStyles.metaLabel}>DATE:</Text>
+          <Text style={stdStyles.metaValue}>{data.date || '---'}</Text>
+        </View>
+        <View style={stdStyles.invoiceMeta}>
+          <Text style={stdStyles.metaLabel}>DUE DATE:</Text>
+          <Text style={stdStyles.metaValue}>{data.dueDate || '---'}</Text>
+        </View>
+      </View>
+    </View>
+
+    <View style={stdStyles.billToSection}>
+      <Text style={stdStyles.billToLabel}>Bill To:</Text>
+      <Text style={stdStyles.clientName}>{data.clientName || 'Client Name'}</Text>
+      <Text style={stdStyles.clientDetails}>{data.clientAddress}</Text>
+      <Text style={stdStyles.clientDetails}>{data.clientEmail}</Text>
+    </View>
+
+    <View style={stdStyles.table}>
+      <View style={stdStyles.tableHeader}>
+        <Text style={stdStyles.thDesc}>Description</Text>
+        <Text style={stdStyles.thQty}>Qty.</Text>
+        <Text style={stdStyles.thPrice}>Price</Text>
+        <Text style={stdStyles.thTotal}>Total</Text>
+      </View>
+      {data.items.map((item, index) => (
+        <View key={index} style={stdStyles.tableRow}>
+          <Text style={stdStyles.tdDesc}>{item.description || 'Item'}</Text>
+          <Text style={stdStyles.tdQty}>{item.quantity}</Text>
+          <Text style={stdStyles.tdPrice}>${Number(item.price).toFixed(2)}</Text>
+          <Text style={stdStyles.tdTotal}>${(item.quantity * item.price).toFixed(2)}</Text>
+        </View>
+      ))}
+    </View>
+
+    <View style={stdStyles.totalsSection}>
+      <View style={stdStyles.totalsBlock}>
+        <View style={stdStyles.totalRow}>
+          <Text style={stdStyles.totalLabel}>Subtotal:</Text>
+          <Text style={stdStyles.totalValue}>${subtotal.toFixed(2)}</Text>
+        </View>
+        <View style={stdStyles.totalRow}>
+          <Text style={stdStyles.totalLabel}>Tax ({data.taxRate}%):</Text>
+          <Text style={stdStyles.totalValue}>${taxAmount.toFixed(2)}</Text>
+        </View>
+        <View style={stdStyles.grandTotalRow}>
+          <Text style={stdStyles.grandTotalLabel}>Total:</Text>
+          <Text style={stdStyles.grandTotalValue}>${total.toFixed(2)}</Text>
+        </View>
+      </View>
+    </View>
+
+    <View style={stdStyles.footer}>
+      <Text style={stdStyles.footerText}>{data.notes || 'Thank you for your business.'}</Text>
+    </View>
+  </Page>
+);
+
+// --- INFINIGUARD TEMPLATE COMPONENT ---
+const InfiniguardTemplate = ({ data, subtotal, taxAmount, total }) => {
+  return (
+    <Page size="A4" style={infStyles.page}>
+      <View style={infStyles.header}>
+        <View style={infStyles.logoSection}>
+          {data.logo && <PdfImage src={data.logo} style={infStyles.logo} />}
+          {data.companyName && <Text style={infStyles.companyName}>{data.companyName}</Text>}
+          {data.companyAddress && <Text style={infStyles.companyDetails}>{data.companyAddress}</Text>}
+          {data.companyTaxId && <Text style={infStyles.companyDetails}>{data.companyTaxId}</Text>}
+          {data.companyPhone && <Text style={infStyles.companyDetails}>{data.companyPhone}</Text>}
+          {data.companyEmail && <Text style={infStyles.companyDetails}>{data.companyEmail}</Text>}
+
+          {data.companyTagline && <Text style={infStyles.tagline}>{data.companyTagline}</Text>}
+        </View>
+        <View style={infStyles.invoiceTitleSection}>
+          <Text style={infStyles.title}>Invoice</Text>
+          <Text style={infStyles.invNumber}># {data.invoiceNumber || '---'}</Text>
+
+          <Text style={infStyles.balanceLabelTitle}>Balance Due</Text>
+          <Text style={infStyles.balanceAmountTitle}>${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+        </View>
+      </View>
+
+      <View style={infStyles.infoRow}>
+        <View style={infStyles.billToBlock}>
+          <Text style={infStyles.billToLabel}>Bill To</Text>
+          <Text style={infStyles.clientName}>{data.clientName || 'Client Name'}</Text>
+          <Text style={infStyles.clientDetails}>{data.clientAddress}</Text>
+        </View>
+
+        {data.shipToName && (
+          <View style={infStyles.shipToBlock}>
+            <Text style={infStyles.billToLabel}>Ship To</Text>
+            <Text style={infStyles.clientDetails}>{data.shipToName}</Text>
+            <Text style={infStyles.clientDetails}>{data.shipToAddress}</Text>
+          </View>
+        )}
+
+        <View style={infStyles.metaBlock}>
+          <View style={infStyles.metaRow}>
+            <Text style={infStyles.metaLabel}>Invoice Date :</Text>
+            <Text style={infStyles.metaValue}>{data.date || '---'}</Text>
+          </View>
+          {data.terms && (
+            <View style={infStyles.metaRow}>
+              <Text style={infStyles.metaLabel}>Terms :</Text>
+              <Text style={infStyles.metaValue}>{data.terms}</Text>
+            </View>
+          )}
+          <View style={infStyles.metaRow}>
+            <Text style={infStyles.metaLabel}>Due Date :</Text>
+            <Text style={infStyles.metaValue}>{data.dueDate || '---'}</Text>
+          </View>
+          {data.poNumber && (
+            <View style={infStyles.metaRow}>
+              <Text style={infStyles.metaLabel}>Reference P.O.# :</Text>
+              <Text style={infStyles.metaValue}>{data.poNumber}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={infStyles.table}>
+        <View style={infStyles.tableHeader}>
+          <Text style={infStyles.thHash}>#</Text>
+          <Text style={infStyles.thDesc}>Item & Description</Text>
+          <Text style={infStyles.thQty}>Qty</Text>
+          <Text style={infStyles.thRate}>Rate</Text>
+          <Text style={infStyles.thAmount}>Amount</Text>
+        </View>
+        {data.items.map((item, index) => (
+          <View key={index} style={infStyles.tableRow}>
+            <Text style={infStyles.tdHash}>{index + 1}</Text>
+            <Text style={infStyles.tdDesc}>{item.description || 'Item'}</Text>
+            <View style={infStyles.thQty}>
+              <Text style={{ fontSize: 9, color: '#333', textAlign: 'right' }}>{Number(item.quantity).toFixed(2)}</Text>
+              {item.unit && <Text style={{ fontSize: 8, color: '#666', marginTop: 2, textAlign: 'right' }}>{item.unit}</Text>}
+            </View>
+            <Text style={infStyles.tdRate}>{Number(item.price).toFixed(2)}</Text>
+            <Text style={infStyles.tdAmount}>{(item.quantity * item.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={infStyles.totalsSection}>
+        <View style={infStyles.totalsBlock}>
+          <View style={infStyles.totalRow}>
+            <Text style={infStyles.totalLabel}>Sub Total</Text>
+            <Text style={infStyles.totalValue}>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+          </View>
+          {taxAmount > 0 && (
+            <View style={infStyles.totalRow}>
+              <Text style={infStyles.totalLabel}>Tax ({data.taxRate}%)</Text>
+              <Text style={infStyles.totalValue}>{taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+            </View>
+          )}
+          <View style={infStyles.totalRowBold}>
+            <Text style={infStyles.totalLabelBold}>Total</Text>
+            <Text style={infStyles.totalValueBold}>${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+          </View>
+          <View style={infStyles.balanceRow}>
+            <Text style={infStyles.totalLabelBold}>Balance Due</Text>
+            <Text style={infStyles.totalValueBold}>${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={infStyles.bottomSection}>
+        {data.notes && (
+          <View>
+            <Text style={infStyles.notesTitle}>Notes</Text>
+            <Text style={infStyles.notesText}>{data.notes}</Text>
+          </View>
+        )}
+
+        {data.bankDetails && (
+          <View style={{ marginTop: 10 }}>
+            <Text style={infStyles.notesTitle}>Payment Options</Text>
+            <Text style={infStyles.notesText}>{data.bankDetails}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={infStyles.termsSection}>
+        <Text style={infStyles.termsTitle}>Terms & Conditions</Text>
+        <Text style={infStyles.termsText}>Invoice currency is USD (United States dollars)</Text>
+      </View>
+    </Page>
+  );
+};
+
+
+// --- MAIN WRAPPER COMPONENT ---
+const InvoiceDocument = ({ data }) => {
+  const subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const taxAmount = subtotal * (data.taxRate / 100);
+  const total = subtotal + taxAmount;
+
+  return (
+    <Document>
+      {data.template === 'infiniguard' ? (
+        <InfiniguardTemplate data={data} subtotal={subtotal} taxAmount={taxAmount} total={total} />
+      ) : (
+        <StandardTemplate data={data} subtotal={subtotal} taxAmount={taxAmount} total={total} />
+      )}
+    </Document>
+  );
+};
+
+// --- MAIN UI COMPONENT ---
+export function InvoiceSection({ title }) {
+  const { clients, addDocument, addReceivable } = useFinance();
+  const { logActivity } = useActivity();
+  const [activeTab, setActiveTab] = useState('editor'); // editor | preview
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [successModal, setSuccessModal] = useState({ isOpen: false, message: '' });
+  const [invoiceData, setInvoiceData] = useState({
+    template: 'standard', // 'standard' | 'infiniguard'
+    logo: null,
+    companyName: '',
+    companyAddress: '',
+    companyEmail: '',
+    companyPhone: '',
+    companyTaxId: '',
+    companyTagline: '',
+    invoiceNumber: '',
+    date: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    terms: '',
+    poNumber: '',
+    linkedClientId: null,
+    clientName: '',
+    clientAddress: '',
+    clientEmail: '',
+    shipToName: '',
+    shipToAddress: '',
+    taxRate: 0,
+    notes: '',
+    bankDetails: '',
+    items: [
+      { description: '', quantity: 1, price: 0, unit: '' },
+    ]
+  });
+
+  const handleInputChange = (field, value) => {
+    setInvoiceData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        handleInputChange('logo', event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addItem = () => {
+    setInvoiceData(prev => ({
+      ...prev,
+      items: [...prev.items, { description: '', quantity: 1, price: 0, unit: '' }]
+    }));
+  };
+
+  const updateItem = (index, field, value) => {
+    const newItems = [...invoiceData.items];
+    newItems[index][field] = value;
+    setInvoiceData(prev => ({ ...prev, items: newItems }));
+  };
+
+  const removeItem = (index) => {
+    const newItems = invoiceData.items.filter((_, i) => i !== index);
+    setInvoiceData(prev => ({ ...prev, items: newItems }));
+  };
+
+  const loadStandardTemplate = () => {
+    setInvoiceData({
+      template: 'standard',
+      logo: null,
+      companyName: '',
+      companyAddress: '',
+      companyEmail: '',
+      companyPhone: '',
+      companyTaxId: '',
+      companyTagline: '',
+      invoiceNumber: '',
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      terms: '',
+      poNumber: '',
+      linkedClientId: null,
+      clientName: '',
+      clientAddress: '',
+      clientEmail: '',
+      shipToName: '',
+      shipToAddress: '',
+      taxRate: 0,
+      notes: '',
+      bankDetails: '',
+      items: [
+        { description: '', quantity: 1, price: 0, unit: '' },
+      ]
+    });
+  };
+
+  const loadInfiniguard1 = () => {
+    setInvoiceData(prev => ({
+      ...prev,
+      template: 'infiniguard',
+      logo: LogoCarribean,
+      companyName: 'Caribbean Energy Solutions',
+      companyAddress: '1353 Ave. Luis Vigoreaux, PMB 167\nGuaynabo, PR 00966',
+      companyEmail: '',
+      companyPhone: 'Phone +1.858.414.1121 Fax +1.858.746.5190',
+      companyTaxId: 'Tax ID : 66-0883673',
+      companyTagline: 'INFINIGUARD - The Clear Choice for Anti-Corrosion',
+      terms: 'Net 60 days',
+      bankDetails: '',
+      notes: '',
+      // Limpiar campos específicos de la factura para que la llenen desde cero
+      invoiceNumber: '',
+      poNumber: '',
+      linkedClientId: null,
+      clientName: '',
+      clientAddress: '',
+      clientEmail: '',
+      shipToName: '',
+      shipToAddress: '',
+      taxRate: 0,
+      items: [
+        { description: '', quantity: 1, price: 0, unit: '' },
+      ]
+    }));
+  };
+
+  const loadInfiniguard2 = () => {
+    setInvoiceData(prev => ({
+      ...prev,
+      template: 'infiniguard',
+      logo: LogoInfiniguard,
+      companyName: 'INFINIGUARD Global, Inc.',
+      companyAddress: '2699 W 79th St\nUNIT 4\nHialeah, Florida 33016',
+      companyEmail: 'https://www.infiniguard.com',
+      companyPhone: '+1-858-414-1121',
+      companyTaxId: 'EIN: 99-0472013',
+      companyTagline: 'INFINIGUARD - The Clear Choice for Anti-Corrosion',
+      terms: 'Net 60',
+      bankDetails: 'Bank: JPMorgan Chase\nABA/Routing #: 322271627\nAccount #: 591798668',
+      notes: 'Thanks for your business.',
+      // Clear invoice-specific fields so the user fills them from scratch
+      invoiceNumber: '',
+      poNumber: '',
+      linkedClientId: null,
+      clientName: '',
+      clientAddress: '',
+      clientEmail: '',
+      shipToName: '',
+      shipToAddress: '',
+      taxRate: 0,
+      items: [
+        { description: '', quantity: 1, price: 0, unit: '' },
+      ]
+    }));
+  };
+  const subtotal = invoiceData.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const total = subtotal + (subtotal * (invoiceData.taxRate / 100));
+
+  const handleCreateInvoice = async () => {
+    setIsCreating(true);
+    // Simulated delay for effect
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    try {
+      const blob = await pdf(<InvoiceDocument data={invoiceData} />).toBlob();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        addDocument({
+          name: `Invoice_${invoiceData.invoiceNumber || Date.now()}.pdf`,
+          type: 'application/pdf',
+          size: blob.size,
+          category: 'Invoice',
+          date: new Date().toISOString().split('T')[0],
+          url: event.target.result
+        });
+        logActivity({
+          type: ACTIVITY_TYPES.INVOICE_SAVED,
+          title: 'Invoice generated and saved',
+          description: `Invoice #${invoiceData.invoiceNumber || '—'} for ${invoiceData.clientName || 'Client'}`
+        });
+
+        let msg = 'The invoice was saved in the document vault.';
+        if (invoiceData.linkedClientId) {
+          addReceivable({
+            description: `Invoice Receivable ${invoiceData.invoiceNumber ? '#' + invoiceData.invoiceNumber : '—'} (${invoiceData.clientName})`,
+            amount: total,
+            expectedDate: invoiceData.dueDate,
+          });
+          msg += ' An accounts receivable entry has been created for this client.';
+        }
+
+        setSuccessModal({ isOpen: true, message: msg });
+        setIsCreating(false);
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error("Error creating invoice", error);
+      alert("Error generating the invoice.");
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col gap-6">
+
+      {/* HEADER & TABS */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+        <p className="text-slate-500 text-sm max-w-xl leading-relaxed">
+          Create professional invoices independently. Fill in the details, customize with your logo and download the PDF instantly.
+        </p>
+
+        <div className="flex items-center gap-3 relative">
+
+          {/* TEMPLATES DROPDOWN */}
+          <div className="relative">
+            <button
+              onClick={() => setShowTemplates(!showTemplates)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-indigo-600 hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm"
+            >
+              <LayoutTemplate size={16} /> Templates
+            </button>
+            <AnimatePresence>
+              {showTemplates && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full mt-2 right-0 w-64 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50 flex flex-col p-1.5"
+                >
+                  <button onClick={() => { loadStandardTemplate(); setShowTemplates(false); }} className="text-left px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">Standard Template (Empty)</button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <button onClick={() => { loadInfiniguard1(); setShowTemplates(false); }} className="text-left px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">Load Caribbean Energy Template</button>
+                  <button onClick={() => { loadInfiniguard2(); setShowTemplates(false); }} className="text-left px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">Load Infiniguard Template</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">
+            <button
+              onClick={() => setActiveTab('editor')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'editor' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Settings size={16} /> Editor
+            </button>
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Eye size={16} /> PDF Preview
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT AREA */}
+      <div className="flex-1 overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {activeTab === 'editor' ? (
+            <motion.div
+              key="editor"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="h-full overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-6"
+            >
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* COMPANY INFO */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText size={18} className="text-indigo-600" />
+                    <h3 className="text-slate-800 font-medium">Company Information</h3>
+                  </div>
+
+                  {/* Logo Upload */}
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wider mb-2 block font-medium">Company Logo</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                        {invoiceData.logo ? (
+                          <img src={invoiceData.logo} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <ImageIcon className="text-slate-300" size={24} />
+                        )}
+                      </div>
+                      <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm cursor-pointer transition-colors border border-slate-200 shadow-sm">
+                        <Upload size={16} />
+                        Upload Logo
+                        <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                      </label>
+                      {invoiceData.logo && (
+                        <button onClick={() => handleInputChange('logo', null)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <InputField label="Company Name" value={invoiceData.companyName} onChange={(e) => handleInputChange('companyName', e.target.value)} />
+                    <InputField label="Address" value={invoiceData.companyAddress} onChange={(e) => handleInputChange('companyAddress', e.target.value)} multiline rows={2} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <InputField label="Email / Website" value={invoiceData.companyEmail} onChange={(e) => handleInputChange('companyEmail', e.target.value)} />
+                      <InputField label="Phone" value={invoiceData.companyPhone} onChange={(e) => handleInputChange('companyPhone', e.target.value)} />
+                    </div>
+                    {invoiceData.template === 'infiniguard' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InputField label="Tax ID / EIN" value={invoiceData.companyTaxId} onChange={(e) => handleInputChange('companyTaxId', e.target.value)} />
+                        <InputField label="Tagline" value={invoiceData.companyTagline} onChange={(e) => handleInputChange('companyTagline', e.target.value)} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* INVOICE & CLIENT INFO */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 size={18} className="text-emerald-500" />
+                      <h3 className="text-slate-800 font-medium">Invoice Details</h3>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <InputField label="Invoice #" value={invoiceData.invoiceNumber} onChange={(e) => handleInputChange('invoiceNumber', e.target.value)} />
+                    <InputField label="Date" type="date" value={invoiceData.date} onChange={(e) => handleInputChange('date', e.target.value)} />
+                    <InputField label="Due Date" type="date" value={invoiceData.dueDate} onChange={(e) => handleInputChange('dueDate', e.target.value)} />
+                    {invoiceData.template === 'infiniguard' && (
+                      <InputField label="Terms" value={invoiceData.terms} onChange={(e) => handleInputChange('terms', e.target.value)} placeholder="e.g. Net 60 days" />
+                    )}
+                    {invoiceData.template === 'infiniguard' && (
+                      <InputField label="P.O. Number" value={invoiceData.poNumber} onChange={(e) => handleInputChange('poNumber', e.target.value)} placeholder="e.g. 229" />
+                    )}
+                  </div>
+
+                  <hr className="border-slate-100 my-2" />
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-slate-500 font-medium uppercase tracking-wider">Bill To (Client)</label>
+                      <select
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-500"
+                        value={invoiceData.linkedClientId || 'manual'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'manual') {
+                            setInvoiceData(prev => ({ ...prev, linkedClientId: null, clientName: '', clientEmail: '', clientAddress: '' }));
+                          } else {
+                            const c = clients.find(cl => cl.id === val);
+                            if (c) {
+                              setInvoiceData(prev => ({ ...prev, linkedClientId: c.id, clientName: c.name, clientEmail: c.email || '', clientAddress: c.address || '' }));
+                            }
+                          }
+                        }}
+                      >
+                        <option value="manual">-- Enter Manually --</option>
+                        {clients?.filter(c => c.type === 'client').map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {!invoiceData.linkedClientId && (
+                      <InputField label="Client Name" value={invoiceData.clientName} onChange={(e) => handleInputChange('clientName', e.target.value)} placeholder="Client Name" />
+                    )}
+                    <InputField label="Billing Address" value={invoiceData.clientAddress} onChange={(e) => handleInputChange('clientAddress', e.target.value)} multiline rows={2} />
+
+                    {invoiceData.template === 'infiniguard' && (
+                      <>
+                        <InputField label="Ship To (Optional)" value={invoiceData.shipToName} onChange={(e) => handleInputChange('shipToName', e.target.value)} placeholder="Ship To Name" />
+                        <InputField label="Shipping Address" value={invoiceData.shipToAddress} onChange={(e) => handleInputChange('shipToAddress', e.target.value)} multiline rows={2} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ITEMS LIST */}
+              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col gap-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-slate-800 font-medium">Line Items / Services</h3>
+                </div>
+
+                <div className="hidden sm:grid grid-cols-[1fr_80px_100px_120px_120px_40px] gap-4 px-3 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <div>Description</div>
+                  <div className="text-center">Unit</div>
+                  <div className="text-center">Qty.</div>
+                  <div className="text-right">Price</div>
+                  <div className="text-right">Total</div>
+                  <div></div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {invoiceData.items.map((item, idx) => (
+                    <div key={idx} className="flex flex-col sm:grid sm:grid-cols-[1fr_80px_100px_120px_120px_40px] gap-3 sm:gap-4 items-end sm:items-center bg-slate-50 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-slate-100 sm:border-transparent">
+                      <div className="w-full">
+                        <span className="sm:hidden text-xs text-slate-500 font-medium mb-1 block">Description</span>
+                        <textarea
+                          value={item.description}
+                          onChange={(e) => updateItem(idx, 'description', e.target.value)}
+                          placeholder="Item description..."
+                          rows={2}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 resize-none"
+                        />
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <span className="sm:hidden text-xs text-slate-500 font-medium mb-1 block">Unit</span>
+                        <input
+                          type="text"
+                          value={item.unit || ''}
+                          onChange={(e) => updateItem(idx, 'unit', e.target.value)}
+                          placeholder="Ej. qt."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 text-center focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <span className="sm:hidden text-xs text-slate-500 font-medium mb-1 block">Qty.</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 text-center focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="w-full sm:w-auto">
+                        <span className="sm:hidden text-xs text-slate-500 font-medium mb-1 block">Price</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.price}
+                            onChange={(e) => updateItem(idx, 'price', Number(e.target.value))}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm text-slate-800 text-right focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-auto text-right">
+                        <span className="sm:hidden text-xs text-slate-500 font-medium mb-1 block">Total</span>
+                        <span className="text-slate-800 font-medium">${(item.quantity * item.price).toFixed(2)}</span>
+                      </div>
+                      <div className="w-full sm:w-auto flex justify-end">
+                        <button
+                          onClick={() => removeItem(idx)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={invoiceData.items.length === 1}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={addItem}
+                  className="mt-2 flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-all text-sm font-medium"
+                >
+                  <Plus size={16} /> Add Line Item
+                </button>
+              </div>
+
+              {/* FOOTER & TOTALS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <InputField label="Tax (%)" type="number" value={invoiceData.taxRate} onChange={(e) => handleInputChange('taxRate', Number(e.target.value))} />
+                    </div>
+                    <div className="flex-1"></div>
+                  </div>
+                  <InputField label="Additional Notes" value={invoiceData.notes} onChange={(e) => handleInputChange('notes', e.target.value)} multiline rows={3} placeholder="Payment instructions..." />
+
+                  {invoiceData.template === 'infiniguard' && (
+                    <InputField label="Payment Options / Bank Details" value={invoiceData.bankDetails} onChange={(e) => handleInputChange('bankDetails', e.target.value)} multiline rows={3} placeholder="Bank account details..." />
+                  )}
+                </div>
+
+                <div className="p-6 rounded-2xl bg-indigo-50 border border-indigo-100 flex flex-col justify-center">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-slate-600 text-sm font-medium">
+                      <span>Subtotal</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    {invoiceData.taxRate > 0 && (
+                      <div className="flex justify-between text-slate-600 text-sm font-medium">
+                        <span>Tax ({invoiceData.taxRate}%)</span>
+                        <span>${(subtotal * (invoiceData.taxRate / 100)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="h-px w-full bg-indigo-200 my-2" />
+                    <div className="flex justify-between text-slate-900 text-xl font-bold">
+                      <span>Total</span>
+                      <span className="text-indigo-600">${total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => setActiveTab('preview')}
+                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      Next <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </motion.div>
+          ) : (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="w-full h-full min-h-[calc(100vh-250px)] flex flex-col gap-4"
+            >
+
+              <div className="flex-1 w-full bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden min-h-[600px] shadow-sm relative group">
+                <PDFViewer width="100%" height="100%" className="border-none" showToolbar={true}>
+                  <InvoiceDocument data={invoiceData} />
+                </PDFViewer>
+                
+                <div className="absolute bottom-6 right-6">
+                  <button
+                    onClick={handleCreateInvoice}
+                    disabled={isCreating}
+                    className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-1"
+                  >
+                    {isCreating ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={24} />
+                        Create Invoice
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {successModal.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSuccessModal({ isOpen: false, message: '' })} />
+              <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-8 rounded-3xl shadow-2xl w-full max-w-sm flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                  <CheckCircle2 size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Invoice Created!</h3>
+                <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+                  {successModal.message}
+                </p>
+                <button onClick={() => setSuccessModal({ isOpen: false, message: '' })} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-md hover:shadow-lg">
+                  Got it
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// Subcomponente reutilizable para inputs
+function InputField({ label, type = "text", value, onChange, placeholder, multiline = false, rows = 1 }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</label>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          rows={rows}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 resize-none custom-scrollbar"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+        />
+      )}
+    </div>
+  );
+}
+
+function ArrowRightIcon(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+    </svg>
+  )
+}
