@@ -187,7 +187,7 @@ app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
 
 // Inicializar y arrancar servidor
 initSuperAdmin().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
   });
 });
