@@ -44,20 +44,20 @@ export function BudgetsSection({ title }) {
   const enrichedBudgets = useMemo(() => {
     return budgets.map(budget => {
       const spent = movements
-        .filter(m => m.type === 'expense' && m.category === budget.category && budgetCardIds.includes(m.cardId))
-        .reduce((sum, m) => sum + m.amount, 0);
+        .filter(m => m.type?.toUpperCase() === 'EXPENSE' && m.category === budget.category && budgetCardIds.includes(m.cardId))
+        .reduce((sum, m) => sum + Number(m.amount), 0);
       return { ...budget, spent };
     });
   }, [budgets, movements, budgetCardIds]);
 
-  const totalBudgeted = enrichedBudgets.reduce((sum, b) => sum + b.limit, 0);
-  const totalSpent = enrichedBudgets.reduce((sum, b) => sum + b.spent, 0);
+  const totalBudgeted = enrichedBudgets.reduce((sum, b) => sum + Number(b.limit), 0);
+  const totalSpent = enrichedBudgets.reduce((sum, b) => sum + Number(b.spent), 0);
   const totalRemaining = totalBudgeted - totalSpent;
   const unassigned = totalBalance - totalBudgeted;
 
   const chartData = enrichedBudgets.map(b => ({
     name: b.category,
-    value: b.limit,
+    value: Number(b.limit),
     color: COLOR_MAP[b.color] || COLOR_MAP['text-gray-400']
   }));
 
