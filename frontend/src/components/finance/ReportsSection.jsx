@@ -146,7 +146,7 @@ export function ReportsSection({ title }) {
       ? getTotalBalance()
       : (cards.find(c => c.id === selectedCard)?.balance || 0);
 
-    const approxInitial = currentBal - netAfterStart;
+    const approxInitial = currentBal - cashFlow;
 
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const sorted = [...monthlyStats.filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
