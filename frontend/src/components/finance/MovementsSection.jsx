@@ -416,49 +416,36 @@ function QuickAddView({ type, selectedCardId, addMovement, setActiveView }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     if (!form.amount || !form.description || !selectedCardId) return;
 
-    let documentId = null;
-
     if (form.attachedFile) {
-      const docId = Date.now().toString() + '-doc';
       addDocument({
-        id: docId,
         name: form.attachedFile.name,
         type: form.attachedFile.type || 'application/pdf',
         category: isIncome ? 'Invoice' : 'Receipt',
         date: form.date,
         size: form.attachedFile.size || 1024,
-        url: null
+        fileUrl: null
       });
-      documentId = docId;
     }
 
-    const res = addMovement({
+    const res = await addMovement({
       cardId: selectedCardId,
       type: type,
       amount: totalAmount,
-      subtotal: subtotal,
-      iva: iva,
       date: form.date,
       description: form.description,
       category: form.category || 'General',
       clientId: form.clientId || null,
-      documentId: documentId,
-      folio: form.folio,
-      rfc: form.rfc,
-      paymentMethod: form.paymentMethod,
-      notes: form.notes,
-      status: 'completed'
     });
     
-    if (res.success) {
+    if (res && res.success) {
       setActiveView('history');
     } else {
-      setError(res.error);
+      setError(res?.error || 'Error al guardar el movimiento.');
     }
   };
 
@@ -911,49 +898,81 @@ function ConfirmModal({ modal, setModal, selectedCardId }) {
   const color = isIncome ? 'emerald' : 'red';
   const data = modal.data;
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleConfirm = () => {
+  const close = () => setModal({ isOpen: false, type: '', data: null });
+
+  const handleConfirm = async () => {
     setError(null);
+    setLoading(true);
     let res;
-    if (isIncome) {
-      res = collectReceivable(data.id, selectedCardId);
-    } else {
-      res = payPayable(data.id, selectedCardId);
-    }
-    
-    if (res.success) {
-      setModal({ isOpen: false, type: '', data: null });
-    } else {
-      setError(res.error);
+    try {
+      if (isIncome) {
+        res = await collectReceivable(data.id, selectedCardId);
+      } else {
+        res = await payPayable(data.id, selectedCardId);
+      }
+      if (res && res.success) {
+        setSuccess(true);
+      } else {
+        setError(res?.error || 'An error occurred. Please try again.');
+      }
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModal({ isOpen: false, type: '', data: null })} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={!loading ? close : undefined} />
       <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl w-full max-w-sm flex flex-col items-center text-center">
-        <div className={`w-16 h-16 rounded-full bg-${color}-100 text-${color}-600 flex items-center justify-center mb-4`}>
-          {isIncome ? <Download size={32} /> : <Send size={32} />}
-        </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm {isIncome ? 'Collection' : 'Payment'}</h3>
         
-        {error && (
-          <div className="w-full bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm text-center mb-4">
-            {error}
-          </div>
-        )}
+        {success ? (
+          <>
+            <motion.div
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}
+              className={`w-16 h-16 rounded-full bg-${color}-100 text-${color}-600 flex items-center justify-center mb-4`}
+            >
+              <CheckCircle size={36} />
+            </motion.div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{isIncome ? 'Collection Successful!' : 'Payment Confirmed!'}</h3>
+            <p className="text-slate-500 text-sm mb-6">
+              <strong className={`text-${color}-600`}>${Number(data.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> has been {isIncome ? 'credited to' : 'debited from'} your account.
+            </p>
+            <button onClick={close} className={`w-full py-3 bg-${color}-100 hover:bg-${color}-200 text-${color}-700 font-bold rounded-xl transition-colors`}>
+              Done
+            </button>
+          </>
+        ) : (
+          <>
+            <div className={`w-16 h-16 rounded-full bg-${color}-100 text-${color}-600 flex items-center justify-center mb-4`}>
+              {isIncome ? <Download size={32} /> : <Send size={32} />}
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm {isIncome ? 'Collection' : 'Payment'}</h3>
+            
+            {error && (
+              <div className="w-full bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm text-center mb-4">
+                {error}
+              </div>
+            )}
 
-        <p className="text-slate-600 text-sm mb-6">
-          Are you sure you want to {isIncome ? 'collect' : 'pay'} <strong className={`text-${color}-600`}>${data.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> for "{data.description}"?
-        </p>
-        <div className="flex gap-3 w-full">
-          <button onClick={() => setModal({ isOpen: false, type: '', data: null })} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors">
-            Cancel
-          </button>
-          <button onClick={handleConfirm} className={`flex-1 py-3 bg-${color}-100 hover:bg-${color}-200 text-${color}-700 font-bold rounded-xl transition-colors`}>
-            Confirm
-          </button>
-        </div>
+            <p className="text-slate-600 text-sm mb-6">
+              Are you sure you want to {isIncome ? 'collect' : 'pay'} <strong className={`text-${color}-600`}>${Number(data.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> for "{data.description}"?
+              {!selectedCardId && <span className="block mt-2 text-amber-600 font-medium text-xs">⚠ No card selected in the carousel.</span>}
+            </p>
+            <div className="flex gap-3 w-full">
+              <button onClick={close} disabled={loading} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors disabled:opacity-60">
+                Cancel
+              </button>
+              <button onClick={handleConfirm} disabled={loading || !selectedCardId} className={`flex-1 py-3 bg-${color}-100 hover:bg-${color}-200 text-${color}-700 font-bold rounded-xl transition-colors disabled:opacity-60`}>
+                {loading ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </>
+        )}
       </motion.div>
     </div>
   );
@@ -963,19 +982,24 @@ function TransferModal({ setModal, sourceCardId }) {
   const { cards, transferBetweenCards } = useFinance();
   const [form, setForm] = useState({ targetId: '', amount: '', description: 'Account transfer' });
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const availableCards = cards.filter(c => c.id !== sourceCardId);
   const sourceCard = cards.find(c => c.id === sourceCardId);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.targetId || !form.amount) return;
+    const amt = parseFloat(form.amount);
+    if (!form.targetId || !amt || amt <= 0) {
+      setError('Please enter a valid amount greater than 0.');
+      return;
+    }
 
-    const res = transferBetweenCards(sourceCardId, form.targetId, parseFloat(form.amount), form.description);
-    if (res.success) {
-      setModal(false);
+    const res = await transferBetweenCards(sourceCardId, form.targetId, amt, form.description);
+    if (res && res.success) {
+      setSuccess(true);
     } else {
-      setError(res.error);
+      setError(res?.error || 'Transfer failed.');
     }
   };
 
@@ -983,51 +1007,70 @@ function TransferModal({ setModal, sourceCardId }) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModal(false)} />
       <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ArrowLeftRight className="text-blue-600" /> Transfer
-          </h3>
-          <button onClick={() => setModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-
-        {availableCards.length === 0 ? (
-          <div className="text-center text-slate-500 py-4">No other cards available for transfer.</div>
+        
+        {success ? (
+          <div className="flex flex-col items-center text-center py-4 gap-4">
+            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+              <ArrowLeftRight size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">Transfer Successful!</h3>
+            <p className="text-slate-500 text-sm">The funds have been moved between your accounts.</p>
+            <button onClick={() => setModal(false)} className="w-full mt-2 font-bold py-3 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl transition-colors">Close</button>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && <div className="text-red-600 bg-red-50 border border-red-100 p-2 rounded-lg text-sm text-center">{error}</div>}
-            
-            <div className="text-sm text-slate-500 text-center mb-2">
-              From: <strong className="text-slate-800">Active card (${sourceCard?.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })})</strong>
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <ArrowLeftRight className="text-blue-600" /> Transfer
+              </h3>
+              <button onClick={() => setModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
+                <X size={18} />
+              </button>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-slate-600 font-medium">To Card</label>
-              <select required value={form.targetId} onChange={e => setForm({...form, targetId: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 appearance-none">
-                <option value="">Select card...</option>
-                {availableCards.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.bank} - {(c.cardNumber || '0000').slice(-4)} (${c.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {availableCards.length === 0 ? (
+              <div className="text-center text-slate-500 py-4">No other cards available for transfer.</div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                {error && <div className="text-red-600 bg-red-50 border border-red-100 p-2 rounded-lg text-sm text-center">{error}</div>}
+                
+                <div className="text-sm text-slate-500 text-center mb-2">
+                  From: <strong className="text-slate-800">Active card (${Number(sourceCard?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })})</strong>
+                </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-slate-600 font-medium">Amount</label>
-              <input type="number" required step="0.01" max={sourceCard?.balance} value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500" />
-            </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-600 font-medium">To Card</label>
+                  <select required value={form.targetId} onChange={e => setForm({...form, targetId: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 appearance-none">
+                    <option value="">Select card...</option>
+                    {availableCards.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.bank} (${Number(c.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-slate-600 font-medium">Description</label>
-              <input type="text" required value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500" />
-            </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-600 font-medium">Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                    <input type="number" required step="0.01" min="0.01" max={Number(sourceCard?.balance || 0)} placeholder="0.00"
+                      value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500" />
+                  </div>
+                </div>
 
-            <button type="submit" className="w-full mt-2 font-bold py-3 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl transition-colors">
-              Transfer Funds
-            </button>
-          </form>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-slate-600 font-medium">Description</label>
+                  <input type="text" required value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500" />
+                </div>
+
+                <button type="submit" className="w-full mt-2 font-bold py-3 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl transition-colors">
+                  Transfer Funds
+                </button>
+              </form>
+            )}
+          </>
         )}
       </motion.div>
     </div>
@@ -1045,72 +1088,96 @@ function TransactionModal({ modal, setModal, selectedCardId }) {
     description: '', category: '', beneficiary: ''
   });
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!form.amount || !form.description) return;
+    const amt = parseFloat(form.amount);
+    if (!amt || amt <= 0 || !form.description) return;
     if (!selectedCardId) {
       setError('No card selected in the carousel.');
       return;
     }
 
-    const res = addMovement({
+    setLoading(true);
+    const res = await addMovement({
       cardId: selectedCardId,
       type: modal.type,
-      amount: parseFloat(form.amount),
+      amount: amt,
       date: form.date,
       description: form.description,
       category: form.category || 'General',
-      beneficiary: form.beneficiary || 'Not specified',
-      status: 'completed'
     });
+    setLoading(false);
     
-    if (res.success) {
-      setModal({ isOpen: false, type: 'income' });
+    if (res && res.success) {
+      setSuccess(true);
     } else {
-      setError(res.error);
+      setError(res?.error || 'An error occurred. Please try again.');
     }
   };
 
+  const close = () => setModal({ isOpen: false, type: 'income' });
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setModal({ isOpen: false, type: 'income' })} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={close} />
       <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className={`text-xl font-bold text-slate-900 flex items-center gap-2`}>
-            <Icon className={`text-${color}-600`} /> {isIncome ? 'Deposit Money' : 'Withdraw Money'}
-          </h3>
-          <button onClick={() => setModal({ isOpen: false, type: 'income' })} className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <div className="text-red-600 bg-red-50 border border-red-100 p-2 rounded-lg text-sm text-center">{error}</div>}
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-slate-600 font-medium">Amount to {isIncome ? 'Deposit' : 'Withdraw'}</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-              <input type="number" required step="0.01" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
+        
+        {success ? (
+          <div className="flex flex-col items-center text-center py-4 gap-4">
+            <motion.div
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}
+              className={`w-16 h-16 rounded-full bg-${color}-100 text-${color}-600 flex items-center justify-center`}
+            >
+              <CheckCircle size={36} />
+            </motion.div>
+            <h3 className="text-xl font-bold text-slate-900">{isIncome ? 'Deposit Successful!' : 'Withdrawal Recorded!'}</h3>
+            <p className="text-slate-500 text-sm">
+              <strong className={`text-${color}-600`}>${parseFloat(form.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> has been {isIncome ? 'added to' : 'deducted from'} your account.
+            </p>
+            <button onClick={close} className={`w-full mt-2 font-bold py-3 bg-${color}-100 text-${color}-700 hover:bg-${color}-200 rounded-xl transition-colors`}>Done</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className={`text-xl font-bold text-slate-900 flex items-center gap-2`}>
+                <Icon className={`text-${color}-600`} /> {isIncome ? 'Deposit Money' : 'Withdraw Money'}
+              </h3>
+              <button onClick={close} className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
+                <X size={18} />
+              </button>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-slate-600 font-medium">Description / Source</label>
-            <input type="text" required placeholder={isIncome ? 'e.g. Cash Deposit' : 'e.g. ATM Withdrawal'} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
-          </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {error && <div className="text-red-600 bg-red-50 border border-red-100 p-2 rounded-lg text-sm text-center">{error}</div>}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-slate-600 font-medium">Date</label>
-            <input type="date" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-600 font-medium">Amount to {isIncome ? 'Deposit' : 'Withdraw'}</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                  <input type="number" required step="0.01" min="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
+                </div>
+              </div>
 
-          <button type="submit" className={`w-full mt-2 font-bold py-3 bg-${color}-100 text-${color}-700 hover:bg-${color}-200 rounded-xl transition-colors`}>
-            Confirm {isIncome ? 'Deposit' : 'Withdrawal'}
-          </button>
-        </form>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-600 font-medium">Description / Source</label>
+                <input type="text" required placeholder={isIncome ? 'e.g. Cash Deposit' : 'e.g. ATM Withdrawal'} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-600 font-medium">Date</label>
+                <input type="date" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
+              </div>
+
+              <button type="submit" disabled={loading} className={`w-full mt-2 font-bold py-3 bg-${color}-100 text-${color}-700 hover:bg-${color}-200 rounded-xl transition-colors disabled:opacity-60`}>
+                {loading ? 'Processing...' : `Confirm ${isIncome ? 'Deposit' : 'Withdrawal'}`}
+              </button>
+            </form>
+          </>
+        )}
       </motion.div>
     </div>
   );

@@ -10,8 +10,8 @@ export function ClientsSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredClients = clients.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          c.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || c.type === filterType;
     return matchesSearch && matchesType;
   });

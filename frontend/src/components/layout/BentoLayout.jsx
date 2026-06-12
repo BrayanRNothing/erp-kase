@@ -20,24 +20,29 @@ import { InvoiceSection } from '../finance/InvoiceSection';
 import { VaultSection } from '../finance/VaultSection';
 import { ClientsSection } from '../finance/ClientsSection';
 import { SettingsSection } from '../settings/SettingsSection';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 // ── Placeholder ──
 function Placeholder({ title, t }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-300">
       <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-        <Settings className="w-8 h-8 text-slate-300 animate-[spin_4s_linear_infinite]" />
+        <HelpCircle className="w-8 h-8 text-indigo-400" />
       </div>
-      <p className="text-xl font-medium tracking-wide text-slate-400">{t.placeholder.title}</p>
-      <p className="text-sm text-slate-300 text-center max-w-xs">{t.placeholder.content}</p>
+      <p className="text-xl font-medium tracking-wide text-slate-400">{title || t.sections.guide}</p>
+      <p className="text-sm text-slate-400 text-center max-w-xs px-2">
+        {t.language === 'en' ? 'Click here to start the interactive guided tour.' : 'Haz clic aquí para iniciar el recorrido guiado interactivo.'}
+      </p>
     </div>
   );
 }
 
 // ── Card base (reemplaza GlassBox) ──
-function Card({ children, className = '', style = {} }) {
+function Card({ children, className = '', style = {}, id }) {
   return (
     <div
+      id={id}
       className={`relative overflow-hidden rounded-2xl bg-white ${className}`}
       style={{
         boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
@@ -60,6 +65,102 @@ export function BentoLayout() {
   const t = getT(language);
   const totalBalance = getTotalBalance();
 
+  const startTour = () => {
+    const isEn = language === 'en';
+    const driverObj = driver({
+      showProgress: true,
+      stagePadding: 6,
+      stageRadius: 16,
+      popoverClass: 'custom-driver-popover',
+      nextBtnText: isEn ? 'Next' : 'Siguiente',
+      prevBtnText: isEn ? 'Previous' : 'Anterior',
+      doneBtnText: isEn ? 'Done' : 'Terminar',
+      steps: [
+        {
+          element: '#tour-profile',
+          popover: {
+            title: isEn ? 'Profile & Session' : 'Perfil y Sesión',
+            description: isEn ? 'Here you can see your active user and log out safely.' : 'Aquí puedes ver tu usuario activo y cerrar sesión de manera segura.',
+            side: 'right', align: 'start'
+          }
+        },
+        {
+          element: '#tour-balance',
+          popover: {
+            title: isEn ? 'Global Balance' : 'Balance General',
+            description: isEn ? 'This is your total consolidated balance across all your cards and accounts.' : 'Este es tu balance general consolidado de todas tus tarjetas, cuentas y efectivo. ¡Todo tu dinero en un solo lugar!',
+            side: 'right', align: 'start'
+          }
+        },
+        {
+          element: '#tour-activity',
+          popover: {
+            title: isEn ? 'Recent Activity' : 'Actividad Reciente',
+            description: isEn ? 'A real-time record of your latest movements, invoices, and changes.' : 'Un historial rápido de las últimas acciones que has realizado en el sistema.',
+            side: 'right', align: 'start'
+          }
+        },
+        {
+          element: '#tour-card-clients',
+          popover: {
+            title: t.sections.clients,
+            description: isEn ? 'Manage your directory of clients and providers first.' : 'Comienza aquí: gestiona tu directorio de clientes y proveedores. Los necesitarás registrados antes de crear facturas o asignar cobros.',
+            side: 'bottom', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-cards',
+          popover: {
+            title: t.sections.cards,
+            description: isEn ? 'Add and manage your bank accounts and credit cards.' : 'En esta sección puedes agregar tus tarjetas de crédito, cuentas bancarias o cajas de efectivo físico.',
+            side: 'bottom', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-movements',
+          popover: {
+            title: t.sections.movements,
+            description: isEn ? 'Here you manage the movements, incomes, and expenses of your cards.' : '¡La sección más usada! Aquí gestionas los movimientos de tus tarjetas: ingresos, gastos y transferencias que ocurren en tus cuentas.',
+            side: 'bottom', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-billing',
+          popover: {
+            title: t.sections.billing,
+            description: isEn ? 'Create professional PDF invoices. You can link them to client receivables.' : 'Crea facturas en PDF profesionales. Además, puedes enlazarlas a cuentas por cobrar de clientes que tengas registrados previamente.',
+            side: 'bottom', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-budgets',
+          popover: {
+            title: t.sections.budgets,
+            description: isEn ? 'Set spending limits to keep your finances healthy.' : 'Establece límites de gasto por categoría (ej. Comida, Software) para que el sistema te avise si te estás excediendo este mes.',
+            side: 'top', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-reports',
+          popover: {
+            title: t.sections.reports,
+            description: isEn ? 'View detailed statistics and charts about your money flow.' : '¿A dónde se va tu dinero? Visita los reportes para ver gráficos estadísticos con un análisis profundo de tu flujo.',
+            side: 'top', align: 'center'
+          }
+        },
+        {
+          element: '#tour-card-vault',
+          popover: {
+            title: t.sections.vault,
+            description: isEn ? 'Store your receipts and important financial documents securely.' : 'Tu archivo digital. Guarda comprobantes de pago, tickets y documentos confidenciales organizados.',
+            side: 'top', align: 'center'
+          }
+        }
+      ]
+    });
+    driverObj.drive();
+  };
+
   const themeStyles = {
     sky: { text: 'group-hover:text-sky-500', border: 'hover:border-sky-300' },
     emerald: { text: 'group-hover:text-emerald-500', border: 'hover:border-emerald-300' },
@@ -80,8 +181,8 @@ export function BentoLayout() {
     { id: 'billing',   title: t.sections.billing,   icon: FileText,       component: InvoiceSection, theme: 'indigo' },
     { id: 'vault',     title: t.sections.vault,     icon: FolderLock,     component: VaultSection, theme: 'violet' },
     { id: 'budgets',   title: t.sections.budgets,   icon: Calculator,     component: BudgetsSection, theme: 'fuchsia' },
-    { id: 'ai',        title: t.sections.ai,        icon: Sparkles,       component: (props) => <Placeholder {...props} t={t} />, theme: 'pink' },
     { id: 'clients',   title: t.sections.clients,   icon: Users,          component: ClientsSection, theme: 'teal' },
+    { id: 'guide',     title: t.sections.guide || 'Guía Rápida', icon: HelpCircle, component: (props) => <Placeholder {...props} title={t.sections.guide || 'Guía Rápida'} t={{...t, language}} />, theme: 'pink' },
     { id: 'settings',  title: t.sections.settings,  icon: Settings,       component: SettingsSection, theme: 'slate' },
   ];
 
@@ -99,7 +200,7 @@ export function BentoLayout() {
       <div className="w-72 flex flex-col gap-4 shrink-0 h-full">
 
         {/* Perfil */}
-        <Card className="p-5 shrink-0">
+        <Card className="p-5 shrink-0" id="tour-profile">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-bold text-base shrink-0">
               {avatar}
@@ -119,7 +220,7 @@ export function BentoLayout() {
         </Card>
 
         {/* Balance rápido */}
-        <Card className="p-5 shrink-0">
+        <Card className="p-5 shrink-0" id="tour-balance">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-5 rounded bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 relative overflow-hidden shadow-sm">
               <div className="absolute top-1/2 left-0 w-full h-px bg-black/15" />
@@ -139,7 +240,7 @@ export function BentoLayout() {
         </Card>
 
         {/* Actividad Reciente */}
-        <Card className="flex-1 p-5 flex flex-col min-h-0">
+        <Card className="flex-1 p-5 flex flex-col min-h-0" id="tour-activity">
           <div className="flex items-center justify-between mb-3 shrink-0">
             <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
               <TrendingUp size={13} className="text-emerald-500" /> Recent Activity
@@ -154,7 +255,7 @@ export function BentoLayout() {
             {activities.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-300 py-6">
                 <TrendingUp size={28} className="opacity-40" />
-                <p className="text-xs text-center">Actions you perform<br/>will appear here.</p>
+                <p className="text-xs text-center">Actions you perform<br />will appear here.</p>
               </div>
             ) : (
               activities.map(a => {
@@ -196,7 +297,6 @@ export function BentoLayout() {
         </Card>
       </div>
 
-
       {/* ── ÁREA PRINCIPAL DERECHA ── */}
       <div className="flex-1 relative h-full flex flex-col items-center justify-center min-w-0">
         <AnimatePresence>
@@ -204,6 +304,7 @@ export function BentoLayout() {
 
             /* ── ESTADO 1: GRID 3x3 ── */
             <motion.div
+              id="tour-grid"
               key="grid-view"
               className="absolute flex items-center justify-center"
               initial={{ opacity: 0 }}
@@ -217,9 +318,16 @@ export function BentoLayout() {
                   const theme = themeStyles[section.theme];
                   return (
                     <motion.button
+                      id={`tour-card-${section.id}`}
                       layoutId={`card-${section.id}`}
                       key={section.id}
-                      onClick={() => setSelectedId(section.id)}
+                      onClick={() => {
+                        if (section.id === 'guide' || section.id === 'ai') {
+                          startTour();
+                        } else {
+                          setSelectedId(section.id);
+                        }
+                      }}
                       className={`relative overflow-hidden flex flex-col items-center justify-center gap-3 rounded-3xl cursor-pointer bg-white group transition-colors duration-200 hover:bg-slate-50 ${theme.border}`}
                       style={{
                         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',

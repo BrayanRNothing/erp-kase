@@ -135,6 +135,7 @@ export function VaultSection({ title }) {
   });
 
   const getFileIcon = (type, size = 20) => {
+    if (!type) return <File size={size} className="text-indigo-500" />;
     if (type.startsWith('image/')) return <ImageIcon size={size} className="text-emerald-500" />;
     if (type === 'application/pdf') return <FileText size={size} className="text-red-500" />;
     return <File size={size} className="text-indigo-500" />;
@@ -242,9 +243,9 @@ export function VaultSection({ title }) {
                     >
                       <Eye size={14} />
                     </button>
-                    {doc.url && (
+                    {(doc.fileUrl || doc.url) && (
                       <a 
-                        href={doc.url} 
+                        href={doc.fileUrl || doc.url} 
                         download={doc.name}
                         className="p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors flex items-center justify-center"
                         title="Download"
@@ -304,7 +305,7 @@ export function VaultSection({ title }) {
                     {doc.category === 'Factura' || doc.category === 'Facturas Creadas' ? 'Created Invoices' : doc.category}
                   </span>
                   {doc.type === 'application/pdf' && <span className="text-[10px] text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded font-bold tracking-wide">PDF</span>}
-                  {doc.type.startsWith('image/') && <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-bold tracking-wide">IMG</span>}
+                  {doc.type?.startsWith('image/') && <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-bold tracking-wide">IMG</span>}
                 </div>
               </motion.div>
             ))}
@@ -413,9 +414,9 @@ export function VaultSection({ title }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {previewDoc.url && (
+                  {(previewDoc.fileUrl || previewDoc.url) && (
                     <a 
-                      href={previewDoc.url} 
+                      href={previewDoc.fileUrl || previewDoc.url} 
                       download={previewDoc.name}
                       className="p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors border border-transparent hover:border-indigo-100"
                       title="Download"
@@ -433,16 +434,16 @@ export function VaultSection({ title }) {
               </div>
 
               <div className="flex-1 bg-slate-100 overflow-hidden flex items-center justify-center p-4">
-                {previewDoc.url ? (
+                {(previewDoc.fileUrl || previewDoc.url) ? (
                   previewDoc.type === 'application/pdf' ? (
                     <iframe 
-                      src={previewDoc.url} 
+                      src={previewDoc.fileUrl || previewDoc.url} 
                       className="w-full h-full rounded-xl bg-white shadow-sm border border-slate-200"
                       title={previewDoc.name}
                     />
-                  ) : previewDoc.type.startsWith('image/') ? (
+                  ) : previewDoc.type?.startsWith('image/') ? (
                     <img 
-                      src={previewDoc.url} 
+                      src={previewDoc.fileUrl || previewDoc.url} 
                       alt={previewDoc.name}
                       className="max-w-full max-h-full object-contain rounded-xl shadow-sm border border-slate-200 bg-white"
                     />
@@ -451,7 +452,7 @@ export function VaultSection({ title }) {
                       <AlertCircle size={48} className="text-amber-500" />
                       <p className="font-medium">Preview not available for this format.</p>
                       <a 
-                        href={previewDoc.url} 
+                        href={previewDoc.fileUrl || previewDoc.url} 
                         download={previewDoc.name}
                         className="px-6 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition-colors shadow-sm"
                       >

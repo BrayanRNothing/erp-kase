@@ -1,16 +1,18 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import pkg from '@prisma/client';
-const { PrismaClient } = pkg;
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pg from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import prisma from './lib/prisma.js';
+import apiRouter from './routes/api.js';
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// v3 - address/color/type schema
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
@@ -20,7 +22,15 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+// Serve uploads directory statically
+app.use('/uploads', express.static(uploadsDir));
 
 // --- Inicializar Super Admin ---
 async function initSuperAdmin() {
@@ -185,9 +195,14 @@ app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// --- Montar Rutas Adicionales ---
+app.use('/api', authenticateToken, apiRouter);
+
 // Inicializar y arrancar servidor
 initSuperAdmin().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
   });
 });
+
+// Trigger restart

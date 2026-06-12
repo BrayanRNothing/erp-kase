@@ -511,8 +511,7 @@ export function InvoiceSection({ title }) {
           type: 'application/pdf',
           size: blob.size,
           category: 'Invoice',
-          date: new Date().toISOString().split('T')[0],
-          url: event.target.result
+          url: event.target.result // Base64 data for backend
         });
         logActivity({
           type: ACTIVITY_TYPES.INVOICE_SAVED,
