@@ -155,7 +155,7 @@ export function BudgetsSection({ title }) {
         <div className="w-[40%] rounded-2xl bg-white border border-slate-200 p-6 flex flex-col items-center justify-center relative shadow-sm">
           <h3 className="absolute top-6 left-6 text-slate-500 font-medium text-sm tracking-wide uppercase">Distribution</h3>
           <div className="w-full h-full min-h-[200px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
               <PieChart>
                 <Pie
                   data={chartData}
