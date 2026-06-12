@@ -111,8 +111,8 @@ export function ReportsSection({ title }) {
       const d = new Date(m.date);
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
-    const income = filtered.filter(m => m.type === 'income').reduce((a, c) => a + c.amount, 0);
-    const expense = filtered.filter(m => m.type === 'expense').reduce((a, c) => a + c.amount, 0);
+    const income = filtered.filter(m => m.type?.toUpperCase() === 'INCOME').reduce((a, c) => a + Number(c.amount), 0);
+    const expense = filtered.filter(m => m.type?.toUpperCase() === 'EXPENSE').reduce((a, c) => a + Number(c.amount), 0);
     const net = income - expense;
     return { filtered, income, expense, net };
   }, [filteredMovements, selectedMonth, selectedYear]);
@@ -125,8 +125,8 @@ export function ReportsSection({ title }) {
       const d = new Date(m.date);
       return d.getMonth() === pm && d.getFullYear() === py;
     });
-    const income = filtered.filter(m => m.type === 'income').reduce((a, c) => a + c.amount, 0);
-    const expense = filtered.filter(m => m.type === 'expense').reduce((a, c) => a + c.amount, 0);
+    const income = filtered.filter(m => m.type?.toUpperCase() === 'INCOME').reduce((a, c) => a + Number(c.amount), 0);
+    const expense = filtered.filter(m => m.type?.toUpperCase() === 'EXPENSE').reduce((a, c) => a + Number(c.amount), 0);
     return { income, expense };
   }, [filteredMovements, selectedMonth, selectedYear]);
 
@@ -138,9 +138,9 @@ export function ReportsSection({ title }) {
   // ── Balance timeline within month ──────────────────────────────────────────
   const balanceTimeline = useMemo(() => {
     const monthStart = new Date(selectedYear, selectedMonth, 1);
-    const movementsAfterStart = filteredMovements.filter(m => new Date(m.date) >= monthStart);
-    const netAfterStart = movementsAfterStart.reduce((a, c) =>
-      c.type === 'income' ? a + c.amount : a - c.amount, 0);
+    const filtered = filteredMovements.filter(m => new Date(m.date) >= monthStart);
+    const cashFlow = filtered.reduce((a, c) => 
+      c.type?.toUpperCase() === 'INCOME' ? a + Number(c.amount) : a - Number(c.amount), 0);
 
     const currentBal = selectedCard === 'all'
       ? getTotalBalance()
@@ -160,8 +160,8 @@ export function ReportsSection({ title }) {
       const dayStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayMvs = sorted.filter(m => m.date === dayStr);
       if (dayMvs.length === 0) continue;
-      const dayIncome = dayMvs.filter(m => m.type === 'income').reduce((a, c) => a + c.amount, 0);
-      const dayExpense = dayMvs.filter(m => m.type === 'expense').reduce((a, c) => a + c.amount, 0);
+      const dayIncome = dayMvs.filter(m => m.type?.toUpperCase() === 'INCOME').reduce((a, c) => a + Number(c.amount), 0);
+      const dayExpense = dayMvs.filter(m => m.type?.toUpperCase() === 'EXPENSE').reduce((a, c) => a + Number(c.amount), 0);
       running += dayIncome - dayExpense;
       points.push({
         day: `${d} ${MONTH_NAMES[selectedMonth].slice(0, 3)}`,
@@ -186,7 +186,7 @@ export function ReportsSection({ title }) {
   // ── Category breakdown ────────────────────────────────────────────────────
   const categoryData = useMemo(() => {
     const map = {};
-    monthlyStats.filtered.filter(m => m.type === 'expense').forEach(m => {
+    monthlyStats.filtered.filter(m => m.type?.toUpperCase() === 'EXPENSE').forEach(m => {
       map[m.category] = (map[m.category] || 0) + m.amount;
     });
     return Object.entries(map)
@@ -201,8 +201,8 @@ export function ReportsSection({ title }) {
         const d = new Date(m.date);
         return d.getMonth() === idx && d.getFullYear() === selectedYear;
       });
-      const income = mvs.filter(m => m.type === 'income').reduce((a, c) => a + c.amount, 0);
-      const expense = mvs.filter(m => m.type === 'expense').reduce((a, c) => a + c.amount, 0);
+      const income = mvs.filter(m => m.type?.toUpperCase() === 'INCOME').reduce((a, c) => a + Number(c.amount), 0);
+      const expense = mvs.filter(m => m.type?.toUpperCase() === 'EXPENSE').reduce((a, c) => a + Number(c.amount), 0);
       return { name: name.slice(0, 3), income, expense, net: income - expense };
     });
   }, [filteredMovements, selectedYear]);
@@ -646,8 +646,8 @@ export function ReportsSection({ title }) {
                               <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-full text-slate-600 text-xs">{m.category}</span>
                             </td>
                             <td className="px-5 py-3.5 text-slate-500 text-xs">{card?.bank || '—'}</td>
-                            <td className={`px-5 py-3.5 text-right font-bold ${m.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                              {m.type === 'income' ? '+' : '-'}{fmt(m.amount)}
+                            <td className={`px-5 py-3.5 text-right font-bold ${m.type?.toUpperCase() === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {m.type?.toUpperCase() === 'INCOME' ? '+' : '-'}{fmt(Number(m.amount))}
                             </td>
                           </tr>
                         );
