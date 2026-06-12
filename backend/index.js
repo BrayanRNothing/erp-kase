@@ -14,6 +14,7 @@ const __dirname = path.dirname(__filename);
 // v3 - address/color/type schema
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
 
