@@ -306,36 +306,39 @@ function HistoryView({ selectedCardId, movements }) {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
         {filteredMovements.length > 0 ? (
-          filteredMovements.map((movement, i) => (
-            <motion.div
-              key={movement.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="relative flex items-center justify-between p-4 rounded-2xl group border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                  movement.type === 'income' 
-                    ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
-                    : 'bg-red-50 border-red-100 text-red-600'
-                }`}>
-                  {movement.type === 'income' ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
-                </div>
-                <div>
-                  <p className="text-slate-800 font-medium">{movement.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                    <span className="flex items-center gap-1"><CalendarDays size={10} /> {movement.date}</span>
-                    <span>•</span>
-                    <span>{movement.category}</span>
+          filteredMovements.map((movement, i) => {
+            const isIncome = movement.type?.toUpperCase() === 'INCOME';
+            return (
+              <motion.div
+                key={movement.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="relative flex items-center justify-between p-4 rounded-2xl group border border-slate-100 bg-white shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                    isIncome 
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+                      : 'bg-red-50 border-red-100 text-red-600'
+                  }`}>
+                    {isIncome ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
+                  </div>
+                  <div>
+                    <p className="text-slate-800 font-medium">{movement.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                      <span className="flex items-center gap-1"><CalendarDays size={10} /> {movement.date ? new Date(movement.date).toLocaleDateString() : 'N/A'}</span>
+                      <span>•</span>
+                      <span>{movement.category || 'General'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className={`font-bold ${movement.type === 'income' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                {movement.type === 'income' ? '+' : '-'}${movement.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </div>
-            </motion.div>
-          ))
+                <div className={`font-bold ${isIncome ? 'text-emerald-600' : 'text-slate-800'}`}>
+                  {isIncome ? '+' : '-'}${Number(movement.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
+              </motion.div>
+            );
+          })
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3">
             <Wallet size={48} className="opacity-50" />
