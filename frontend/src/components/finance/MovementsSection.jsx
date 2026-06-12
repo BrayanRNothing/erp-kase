@@ -354,7 +354,7 @@ function HistoryView({ selectedCardId, movements }) {
 const SAFELIST = "hidden bg-emerald-50 border-emerald-100 text-emerald-900 bg-emerald-100 text-emerald-600 focus:border-emerald-500 text-emerald-400 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-200 focus:ring-emerald-500 bg-red-50 border-red-100 text-red-900 bg-red-100 text-red-600 focus:border-red-500 text-red-400 bg-red-50/50 hover:bg-red-50 text-red-700 border-red-200 hover:bg-red-200 focus:ring-red-500";
 
 function QuickAddView({ type, selectedCardId, addMovement, setActiveView }) {
-  const { clients, addDocument } = useFinance();
+  const { clients, addDocument, budgets } = useFinance();
   const isIncome = type === 'income';
   const color = isIncome ? 'emerald' : 'red';
   const Icon = isIncome ? ArrowDownRight : ArrowUpRight;
@@ -566,27 +566,30 @@ function QuickAddView({ type, selectedCardId, addMovement, setActiveView }) {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-slate-500 font-medium">Category</label>
-            <select
+            <input
+              list={`category-list-${type}`}
+              placeholder="Type or select category..."
               value={form.category} onChange={e => setForm({...form, category: e.target.value})}
-              className={`bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500 transition-colors appearance-none`}
-            >
-              <option value="">Select...</option>
+              className={`bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500 transition-colors`}
+            />
+            <datalist id={`category-list-${type}`}>
               {isIncome ? (
                 <>
-                  <option value="Sales">Sales</option>
-                  <option value="Services">Services</option>
-                  <option value="Others">Others</option>
+                  <option value="Sales" />
+                  <option value="Services" />
+                  <option value="Others" />
                 </>
               ) : (
                 <>
-                  <option value="Services">Services</option>
-                  <option value="Subscriptions">Subscriptions</option>
-                  <option value="Payroll">Payroll</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Others">Others</option>
+                  {budgets.map(b => <option key={b.id} value={b.category} />)}
+                  <option value="Services" />
+                  <option value="Subscriptions" />
+                  <option value="Payroll" />
+                  <option value="Operations" />
+                  <option value="Others" />
                 </>
               )}
-            </select>
+            </datalist>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-slate-500 font-medium">{isIncome ? 'Sale Description *' : 'Expense Description *'}</label>
@@ -1081,7 +1084,7 @@ function TransferModal({ setModal, sourceCardId }) {
 }
 
 function TransactionModal({ modal, setModal, selectedCardId }) {
-  const { addMovement } = useFinance();
+  const { addMovement, budgets } = useFinance();
   const isIncome = modal.type === 'income';
   const color = isIncome ? 'emerald' : 'indigo';
   const Icon = isIncome ? Download : Send;
@@ -1168,6 +1171,33 @@ function TransactionModal({ modal, setModal, selectedCardId }) {
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs text-slate-600 font-medium">Description / Source</label>
                 <input type="text" required placeholder={isIncome ? 'e.g. Cash Deposit' : 'e.g. ATM Withdrawal'} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`} />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-slate-600 font-medium">Category</label>
+                <input
+                  list={`modal-category-list-${modal.type}`}
+                  type="text" placeholder="e.g. Sales, Rent, Marketing..." value={form.category} onChange={e => setForm({...form, category: e.target.value})}
+                  className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-${color}-500`}
+                />
+                <datalist id={`modal-category-list-${modal.type}`}>
+                  {isIncome ? (
+                    <>
+                      <option value="Sales" />
+                      <option value="Services" />
+                      <option value="Others" />
+                    </>
+                  ) : (
+                    <>
+                      {budgets?.map(b => <option key={b.id} value={b.category} />)}
+                      <option value="Services" />
+                      <option value="Subscriptions" />
+                      <option value="Payroll" />
+                      <option value="Operations" />
+                      <option value="Others" />
+                    </>
+                  )}
+                </datalist>
               </div>
 
               <div className="flex flex-col gap-1.5">
