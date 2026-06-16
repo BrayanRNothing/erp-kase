@@ -7,6 +7,7 @@ import { useActivity, ACTIVITY_TYPES } from '../../context/ActivityContext';
 
 import LogoCarribean from '../../assets/carribeanenergysolutionslogo.png';
 import LogoInfiniguard from '../../assets/infiniguardlogo.png';
+import LogoProtex from '../../assets/protexlogo.png';
 
 // --- STANDARD STYLES ---
 const stdStyles = StyleSheet.create({
@@ -630,6 +631,13 @@ export function InvoiceSection({ title }) {
                         Upload Logo
                         <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                       </label>
+                      <button 
+                        onClick={() => handleInputChange('logo', LogoProtex)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm cursor-pointer transition-colors border border-slate-200 shadow-sm"
+                      >
+                        <ImageIcon size={16} className="text-indigo-600" />
+                        Usar Logo Protex
+                      </button>
                       {invoiceData.logo && (
                         <button onClick={() => handleInputChange('logo', null)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200">
                           <Trash2 size={16} />
