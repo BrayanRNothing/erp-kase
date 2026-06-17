@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useActivity, ACTIVITY_TYPES } from './ActivityContext';
 import { useAuth } from './AuthContext';
+import { io } from 'socket.io-client';
 
 const FinanceContext = createContext(null);
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -34,36 +35,53 @@ export function FinanceProvider({ children }) {
     return res.json();
   };
 
+  const fetchAllData = useCallback(() => {
+    Promise.all([
+      apiCall('/cards'),
+      apiCall('/movements'),
+      apiCall('/clients'),
+      apiCall('/budgets'),
+      apiCall('/documents'),
+      apiCall('/expected-expenses'),
+      apiCall('/receivables'),
+      apiCall('/payables')
+    ]).then(([c, m, cl, b, d, e, r, p]) => {
+      setCards(c);
+      setBudgetCardIds(c.map(card => card.id));
+      setMovements(m);
+      setClients(cl);
+      setBudgets(b);
+      setDocuments(d);
+      setExpectedExpenses(e);
+      setReceivables(r);
+      setPayables(p);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Error loading finance data:", err);
+      setLoading(false);
+    });
+  }, [token]);
+
   useEffect(() => {
     if (token && user) {
-      Promise.all([
-        apiCall('/cards'),
-        apiCall('/movements'),
-        apiCall('/clients'),
-        apiCall('/budgets'),
-        apiCall('/documents'),
-        apiCall('/expected-expenses'),
-        apiCall('/receivables'),
-        apiCall('/payables')
-      ]).then(([c, m, cl, b, d, e, r, p]) => {
-        setCards(c);
-        setBudgetCardIds(c.map(card => card.id));
-        setMovements(m);
-        setClients(cl);
-        setBudgets(b);
-        setDocuments(d);
-        setExpectedExpenses(e);
-        setReceivables(r);
-        setPayables(p);
-        setLoading(false);
-      }).catch(err => {
-        console.error("Error loading finance data:", err);
-        setLoading(false);
+      fetchAllData();
+
+      const socket = io(API_URL.replace('/api', ''), { transports: ['websocket', 'polling'] });
+      
+      // Join the team's room to receive real-time updates
+      socket.emit('joinRoom', user.ownerId);
+
+      socket.on('updateData', () => {
+        fetchAllData();
       });
+
+      return () => {
+        socket.disconnect();
+      };
     } else {
       setLoading(false);
     }
-  }, [token, user]);
+  }, [token, user, fetchAllData]);
 
   // -- CARDS --
   const addCard = async (card) => {

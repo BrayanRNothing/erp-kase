@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { AlertCircle, ArrowRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     const result = await login(email, password);
-    if (!result.success) setError(result.error);
+    if (!result.success) toast.error(result.error);
     setLoading(false);
   };
 
@@ -42,13 +41,6 @@ export function LoginScreen() {
             </div>
             <p className="text-xs font-semibold text-slate-400 tracking-widest uppercase">Finance & Operations</p>
           </div>
-
-          {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2.5 text-red-500 text-sm">
-              <AlertCircle size={15} />
-              <p>{error}</p>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

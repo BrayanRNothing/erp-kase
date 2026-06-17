@@ -1,7 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// --- Fetch Interceptor for 401 Expirations ---
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+  const response = await originalFetch.apply(this, args);
+  if ((response.status === 401 || response.status === 403) && !args[0].toString().includes('/auth/login')) {
+    window.dispatchEvent(new Event('auth:unauthorized'));
+  }
+  return response;
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -18,6 +29,17 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
+
+    const handleUnauthorized = () => {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.error('Tu sesión ha expirado por seguridad. Por favor, inicia sesión de nuevo.');
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email, password) => {

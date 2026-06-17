@@ -6,14 +6,21 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Server } from 'socket.io';
+import http from 'http';
 import prisma from './lib/prisma.js';
 import apiRouter from './routes/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// v3 - address/color/type schema
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+app.set('io', io);
 app.set('trust proxy', true);
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
@@ -175,7 +182,7 @@ app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
         email,
         name: name || email.split('@')[0],
         password: hashedPassword,
-        role: role === 'ADMIN' ? 'ADMIN' : 'USER'
+        role: 'USER' // Super Admin can only create normal users to prevent super admin cloning
       },
       select: {
         id: true,
@@ -196,9 +203,15 @@ app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
 // --- Montar Rutas Adicionales ---
 app.use('/api', authenticateToken, apiRouter);
 
+io.on('connection', (socket) => {
+  socket.on('joinRoom', (ownerId) => {
+    socket.join(ownerId);
+  });
+});
+
 // Inicializar y arrancar servidor
 initSuperAdmin().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
   });
 });

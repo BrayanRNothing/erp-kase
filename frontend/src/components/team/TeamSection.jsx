@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -52,8 +53,6 @@ export function TeamSection() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [copiedToken, setCopiedToken] = useState(null);
 
   useEffect(() => {
@@ -83,7 +82,6 @@ export function TeamSection() {
 
   const handleUpdateCompany = async (nameToUpdate = companyName, logoToUpdate = companyLogo) => {
     try {
-      setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team`, {
         method: 'PUT',
         headers: {
@@ -94,25 +92,23 @@ export function TeamSection() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Empresa guardada');
+        toast.success('Empresa guardada');
         updateUser({ companyName: data.companyName, companyLogo: data.companyLogo });
         setCompanyName(data.companyName);
         setCompanyLogo(data.companyLogo || '');
         setTeamCode(data.teamCode);
         setIsEditingCompany(false);
-        setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Error al actualizar la empresa');
+      toast.error('Error al actualizar la empresa');
     }
   };
 
   const handleJoinTeam = async (e) => {
     e.preventDefault();
     try {
-      setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team/join`, {
         method: 'POST',
         headers: {
@@ -122,16 +118,16 @@ export function TeamSection() {
         body: JSON.stringify({ token: joinToken })
       });
       if (res.ok) {
-        setSuccess('¡Te has unido al equipo!');
+        toast.success('¡Te has unido al equipo!');
         setTimeout(() => {
           window.location.reload(); 
         }, 1500);
       } else {
         const data = await res.json();
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Error al unirse al equipo');
+      toast.error('Error al unirse al equipo');
     }
   };
 
@@ -146,29 +142,27 @@ export function TeamSection() {
       : '¿Estás seguro de que quieres abandonar el equipo? Ya no podrás ver los datos.';
     if (!confirm(msg)) return;
     try {
-      setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team/leave`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setSuccess('Has salido del equipo');
+        toast.success('Has salido del equipo');
         setTimeout(() => {
           window.location.reload();
         }, 1500);
       } else {
         const data = await res.json();
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Error al salir');
+      toast.error('Error al salir');
     }
   };
 
   const handleCreateMember = async (e) => {
     e.preventDefault();
     try {
-      setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team/members`, {
         method: 'POST',
         headers: {
@@ -179,15 +173,15 @@ export function TeamSection() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('Usuario creado exitosamente');
+        toast.success('Usuario creado exitosamente');
         setNewUserEmail(''); setNewUserName(''); setNewUserPassword('');
         setShowAddUserModal(false);
         fetchTeam();
       } else {
-        setError(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      setError('Error al crear usuario');
+      toast.error('Error al crear usuario');
     }
   };
 
@@ -200,12 +194,13 @@ export function TeamSection() {
       });
       if (res.ok) {
         setMembers(members.filter(m => m.id !== id));
+        toast.success('Miembro eliminado');
       } else {
         const data = await res.json();
-        alert(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      console.error(err);
+      toast.error('Error al eliminar');
     }
   };
 
@@ -222,14 +217,13 @@ export function TeamSection() {
       if (res.ok) {
         setMembers(members.map(m => m.id === id ? { ...m, role: newRole } : m));
         setEditingMember(null);
-        setSuccess('Rol actualizado exitosamente');
-        setTimeout(() => setSuccess(''), 3000);
+        toast.success('Rol actualizado exitosamente');
       } else {
         const data = await res.json();
-        alert(data.error);
+        toast.error(data.error);
       }
     } catch (err) {
-      console.error(err);
+      toast.error('Error al actualizar rol');
     }
   };
 
@@ -247,22 +241,6 @@ export function TeamSection() {
 
   return (
     <div className="max-w-6xl mx-auto h-full flex flex-col gap-8 pb-8">
-      {/* Mensajes de feedback */}
-      {(error || success) && (
-        <div className="flex gap-4 shrink-0">
-          {error && (
-            <div className="flex-1 bg-red-50 text-red-600 p-4 rounded-2xl text-sm flex items-center gap-2 border border-red-100 shadow-sm">
-              <AlertCircle size={16} /> {error}
-            </div>
-          )}
-          {success && (
-            <div className="flex-1 bg-emerald-50 text-emerald-600 p-4 rounded-2xl text-sm flex items-center gap-2 border border-emerald-100 shadow-sm">
-              <Info size={16} /> {success}
-            </div>
-          )}
-        </div>
-      )}
-
       {!hasTeam ? (
         // NO TEAM VIEW
         <div className="flex-1 flex flex-col md:flex-row gap-8 items-center justify-center p-4">

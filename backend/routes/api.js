@@ -19,6 +19,23 @@ const handleError = (res, error) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 };
 
+// Middleware para emitir eventos de actualización (WebSockets) automáticamente
+router.use((req, res, next) => {
+  if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    const originalJson = res.json;
+    res.json = function(body) {
+      originalJson.call(this, body);
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        const io = req.app.get('io');
+        if (io && req.user && req.user.ownerId) {
+          io.to(req.user.ownerId).emit('updateData');
+        }
+      }
+    };
+  }
+  next();
+});
+
 // --- CARDS ---
 router.get('/cards', async (req, res) => {
   try {

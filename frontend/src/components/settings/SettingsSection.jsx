@@ -4,6 +4,7 @@ import { User, Image as ImageIcon, Globe, Save, Check, Shield, Bell } from 'luci
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
+import toast from 'react-hot-toast';
 
 export function SettingsSection() {
   const { user, updateUser } = useAuth();
@@ -26,32 +27,23 @@ export function SettingsSection() {
     language: language || 'es',
   });
 
-  const [saved, setSaved] = useState(false);
-
   const handleProfileChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
-    setSaved(false);
   };
 
   const handleAppChange = (e) => {
     setAppData({ ...appData, [e.target.name]: e.target.value });
-    setSaved(false);
   };
 
   const handleSaveProfile = () => {
     updateUser({ name: profileData.name, email: profileData.email });
-    showSavedIndicator();
+    toast.success(t.settings.profile.title + ' ' + 'guardado');
   };
 
   const handleSaveApp = () => {
     setBackgroundUrl(appData.backgroundUrl);
     setLanguage(appData.language); // This triggers re-render of everything using useSettings
-    showSavedIndicator();
-  };
-
-  const showSavedIndicator = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    toast.success(t.settings.appearance.title + ' ' + 'guardado');
   };
 
   const tabs = [
@@ -131,11 +123,7 @@ export function SettingsSection() {
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-4">
-                {saved && (
-                  <span className="text-emerald-600 font-medium text-sm flex items-center gap-1">
-                    <Check size={14} /> {ts.profile.saved}
-                  </span>
-                )}
+                {/* Removed saved state visual since we use toast */ }
                 <button
                   onClick={handleSaveProfile}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-colors"
@@ -202,11 +190,7 @@ export function SettingsSection() {
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-4">
-                {saved && (
-                  <span className="text-emerald-600 font-medium text-sm flex items-center gap-1">
-                    <Check size={14} /> {ts.appearance.saved}
-                  </span>
-                )}
+                {/* Removed saved state visual since we use toast */ }
                 <button
                   onClick={handleSaveApp}
                   className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-colors"

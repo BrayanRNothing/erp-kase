@@ -4,6 +4,7 @@ import { FinanceProvider } from './context/FinanceContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { ActivityProvider } from './context/ActivityContext';
+import { Toaster } from 'react-hot-toast';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -12,6 +13,7 @@ function MainApp() {
 
   return (
     <>
+      <Toaster position="top-right" />
       {/* Solid light background */}
       <div className="fixed inset-0 w-full h-full bg-slate-100 -z-10" />
 

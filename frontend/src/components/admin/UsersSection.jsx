@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserPlus, Shield, User, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function UsersSection({ title }) {
   const { token } = useAuth();
@@ -8,7 +9,6 @@ export function UsersSection({ title }) {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'USER' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   const fetchUsers = async () => {
     try {
@@ -33,7 +33,6 @@ export function UsersSection({ title }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError('');
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/users`, {
@@ -50,8 +49,9 @@ export function UsersSection({ title }) {
       
       setForm({ name: '', email: '', password: '', role: 'USER' });
       fetchUsers();
+      toast.success('Usuario creado exitosamente');
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -91,8 +91,6 @@ export function UsersSection({ title }) {
           <UserPlus size={18} className="text-indigo-600" /> Nuevo Usuario
         </h3>
         
-        {error && <div className="p-3 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">{error}</div>}
-        
         <form onSubmit={handleSubmit} className="space-y-4 flex-1">
           <div>
             <label className="text-xs text-slate-500 font-medium ml-1">Nombre</label>
@@ -126,17 +124,7 @@ export function UsersSection({ title }) {
               placeholder="••••••••"
             />
           </div>
-          <div>
-            <label className="text-xs text-slate-500 font-medium ml-1">Rol</label>
-            <select
-              value={form.role}
-              onChange={e => setForm({...form, role: e.target.value})}
-              className="w-full mt-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow [&>option]:bg-white"
-            >
-              <option value="USER">Usuario Normal</option>
-              <option value="ADMIN">Administrador</option>
-            </select>
-          </div>
+          {/* Rol Selection removed to prevent creating more Super Admins */}
           
           <button
             type="submit"
