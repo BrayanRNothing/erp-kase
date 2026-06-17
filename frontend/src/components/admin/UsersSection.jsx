@@ -57,28 +57,28 @@ export function UsersSection({ title }) {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-full text-white/50"><Loader2 className="animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-full text-slate-400"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="flex flex-col md:flex-row gap-8 h-full">
       {/* Lista de Usuarios */}
-      <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 overflow-y-auto custom-scrollbar">
-        <h3 className="text-white font-semibold mb-4 text-lg">Total de Usuarios ({users.length})</h3>
+      <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 overflow-y-auto custom-scrollbar shadow-sm">
+        <h3 className="text-slate-800 font-bold mb-4 text-lg">Total de Usuarios ({users.length})</h3>
         <div className="space-y-3">
           {users.map(u => (
-            <div key={u.id} className="flex items-center justify-between p-4 rounded-xl bg-black/20 hover:bg-black/30 transition-colors border border-white/5">
+            <div key={u.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/50 to-violet-500/50 flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold">
                   {u.name ? u.name.substring(0, 2).toUpperCase() : 'U'}
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium">{u.name}</p>
-                  <p className="text-white/50 text-xs">{u.email}</p>
+                  <p className="text-slate-800 text-sm font-bold">{u.name}</p>
+                  <p className="text-slate-500 text-xs">{u.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                {u.role === 'ADMIN' ? <Shield size={12} className="text-indigo-400" /> : <User size={12} className="text-emerald-400" />}
-                <span className="text-white/70 text-xs">{u.role}</span>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm">
+                {u.role === 'ADMIN' ? <Shield size={12} className="text-indigo-600" /> : <User size={12} className="text-emerald-600" />}
+                <span className="text-slate-600 text-xs font-medium">{u.role}</span>
               </div>
             </div>
           ))}
@@ -86,52 +86,52 @@ export function UsersSection({ title }) {
       </div>
 
       {/* Formulario de Creación */}
-      <div className="w-full md:w-80 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col shrink-0">
-        <h3 className="text-white font-semibold mb-4 text-lg flex items-center gap-2">
-          <UserPlus size={18} className="text-indigo-400" /> Nuevo Usuario
+      <div className="w-full md:w-80 bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col shrink-0">
+        <h3 className="text-slate-800 font-bold mb-4 text-lg flex items-center gap-2">
+          <UserPlus size={18} className="text-indigo-600" /> Nuevo Usuario
         </h3>
         
-        {error && <div className="p-3 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">{error}</div>}
+        {error && <div className="p-3 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">{error}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-4 flex-1">
           <div>
-            <label className="text-xs text-white/50 ml-1">Nombre</label>
+            <label className="text-xs text-slate-500 font-medium ml-1">Nombre</label>
             <input
               type="text"
               value={form.name}
               onChange={e => setForm({...form, name: e.target.value})}
-              className="w-full mt-1 px-4 py-2.5 bg-black/20 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full mt-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow"
               placeholder="Juan Pérez"
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 ml-1">Email / Usuario *</label>
+            <label className="text-xs text-slate-500 font-medium ml-1">Email / Usuario *</label>
             <input
               type="text"
               required
               value={form.email}
               onChange={e => setForm({...form, email: e.target.value})}
-              className="w-full mt-1 px-4 py-2.5 bg-black/20 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full mt-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow"
               placeholder="brayan"
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 ml-1">Contraseña *</label>
+            <label className="text-xs text-slate-500 font-medium ml-1">Contraseña *</label>
             <input
               type="password"
               required
               value={form.password}
               onChange={e => setForm({...form, password: e.target.value})}
-              className="w-full mt-1 px-4 py-2.5 bg-black/20 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full mt-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow"
               placeholder="••••••••"
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 ml-1">Rol</label>
+            <label className="text-xs text-slate-500 font-medium ml-1">Rol</label>
             <select
               value={form.role}
               onChange={e => setForm({...form, role: e.target.value})}
-              className="w-full mt-1 px-4 py-2.5 bg-black/20 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500 [&>option]:bg-gray-900"
+              className="w-full mt-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow [&>option]:bg-white"
             >
               <option value="USER">Usuario Normal</option>
               <option value="ADMIN">Administrador</option>
@@ -141,7 +141,7 @@ export function UsersSection({ title }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 mt-6 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+            className="w-full py-3 mt-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
           >
             {isSubmitting ? 'Creando...' : 'Crear Usuario'}
           </button>

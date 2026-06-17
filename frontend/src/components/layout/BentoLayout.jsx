@@ -187,7 +187,8 @@ export function BentoLayout() {
     { id: 'team',      title: t.sections.team || 'Equipo', icon: Building2, component: TeamSection, theme: 'slate' },
   ];
 
-  const activeSections = user?.role === 'ADMIN'
+  const isSuperAdmin = user?.role === 'ADMIN' && !user?.parentId;
+  const activeSections = isSuperAdmin
     ? [...SECTIONS, { id: 'users', title: t.sections.users, icon: Users, component: UsersSection, theme: 'blue' }, { id: 'settings', title: t.sections.settings, icon: Settings, component: SettingsSection, theme: 'slate' }]
     : [...SECTIONS, { id: 'settings', title: t.sections.settings, icon: Settings, component: SettingsSection, theme: 'slate' }];
 
