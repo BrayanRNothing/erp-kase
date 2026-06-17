@@ -121,7 +121,10 @@ export function TeamSection() {
   };
 
   const handleLeaveTeam = async () => {
-    if (!confirm('¿Estás seguro de que quieres abandonar el equipo? Ya no podrás ver los datos.')) return;
+    const msg = isOwner 
+      ? '¿Estás seguro de que quieres salir? Si hay miembros, el administrador tomará tu lugar. Si no, el equipo se eliminará.' 
+      : '¿Estás seguro de que quieres abandonar el equipo? Ya no podrás ver los datos.';
+    if (!confirm(msg)) return;
     try {
       setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team/leave`, {
@@ -129,7 +132,7 @@ export function TeamSection() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setSuccess('Has abandonado el equipo');
+        setSuccess('Has salido del equipo');
         setTimeout(() => {
           window.location.reload();
         }, 1500);
@@ -372,15 +375,16 @@ export function TeamSection() {
                   )}
                 </div>
                 
-                {!isOwner ? (
-                  <button onClick={handleLeaveTeam} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-100 text-xs font-medium transition-colors shadow-sm">
-                    <LogOut size={14} /> Salir del Equipo
+                <div className="flex items-center gap-2">
+                  <button onClick={handleLeaveTeam} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-100 text-xs font-medium transition-colors shadow-sm" title={isOwner ? "Eliminar equipo o transferir propiedad" : "Salir del Equipo"}>
+                    <LogOut size={14} /> {isOwner ? 'Eliminar / Salir' : 'Salir del Equipo'}
                   </button>
-                ) : (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md border border-emerald-100 text-xs font-bold text-emerald-600">
-                    <Lock size={12} /> Dueño
-                  </div>
-                )}
+                  {isOwner && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md border border-emerald-100 text-xs font-bold text-emerald-600">
+                      <Lock size={12} /> Dueño
+                    </div>
+                  )}
+                </div>
               </div>
               
               {!isEditingCompany && <p className="text-sm text-slate-500 mt-1">Gestiona los usuarios y accesos de tu espacio de trabajo.</p>}

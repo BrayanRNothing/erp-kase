@@ -509,16 +509,69 @@ router.post('/team/join', async (req, res) => {
 
 router.post('/team/leave', async (req, res) => {
   try {
-    if (!req.user.parentId) {
+    if (req.user.parentId) {
+      // User is a member, just leave
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { parentId: null, role: 'USER' }
+      });
+      return res.json({ success: true, message: 'Has abandonado el equipo' });
+    }
+
+    // User is the OWNER
+    if (!req.user.companyName) {
       return res.status(400).json({ error: 'No estás en un equipo.' });
     }
+
+    const members = await prisma.user.findMany({ where: { parentId: req.user.id } });
     
+    if (members.length === 0) {
+      // Owner is alone, delete team info
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { companyName: null, companyLogo: null, teamCode: null }
+      });
+      return res.json({ success: true, message: 'Equipo eliminado' });
+    }
+
+    // Owner has members, transfer ownership
+    const newOwner = members.find(m => m.role === 'ADMIN') || members[0];
+    const ownerData = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    // 1. Update other members to point to new owner
+    await prisma.user.updateMany({
+      where: { parentId: req.user.id, id: { not: newOwner.id } },
+      data: { parentId: newOwner.id }
+    });
+
+    // 2. Promote new owner
+    await prisma.user.update({
+      where: { id: newOwner.id },
+      data: {
+        parentId: null,
+        role: 'ADMIN',
+        companyName: ownerData.companyName,
+        companyLogo: ownerData.companyLogo,
+        teamCode: ownerData.teamCode
+      }
+    });
+
+    // 3. Transfer business data
+    const tables = ['card', 'movement', 'client', 'budget', 'document', 'activityLog', 'expectedExpense', 'receivable', 'payable'];
+    for (const table of tables) {
+      await prisma[table].updateMany({
+        where: { userId: req.user.id },
+        data: { userId: newOwner.id }
+      });
+    }
+
+    // 4. Clear old owner
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { parentId: null, role: 'USER' }
+      data: { companyName: null, companyLogo: null, teamCode: null }
     });
-    
-    res.json({ success: true });
+
+    res.json({ success: true, message: 'Has dejado el equipo y transferido la propiedad' });
   } catch (error) { handleError(res, error); }
 });
 
