@@ -200,6 +200,35 @@ app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Eliminar un usuario
+app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Prevent super admin from deleting themselves
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+    }
+
+    const userToDelete = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userToDelete) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Optional: Prevent deleting the main admin
+    if (userToDelete.email === 'admin') {
+      return res.status(400).json({ error: 'No se puede eliminar al Administrador principal' });
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+    
+    res.json({ success: true, message: 'Usuario eliminado' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
+  }
+});
+
 // --- Montar Rutas Adicionales ---
 app.use('/api', authenticateToken, apiRouter);
 

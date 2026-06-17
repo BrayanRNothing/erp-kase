@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { UserPlus, Shield, User, Loader2 } from 'lucide-react';
+import { UserPlus, Shield, User, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function UsersSection({ title }) {
@@ -29,6 +29,25 @@ export function UsersSection({ title }) {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar a este usuario permanentemente?')) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/users/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success('Usuario eliminado');
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Error al eliminar usuario');
+      }
+    } catch (err) {
+      toast.error('Error de red al eliminar usuario');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,9 +95,20 @@ export function UsersSection({ title }) {
                   <p className="text-slate-500 text-xs">{u.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm">
-                {u.role === 'ADMIN' ? <Shield size={12} className="text-indigo-600" /> : <User size={12} className="text-emerald-600" />}
-                <span className="text-slate-600 text-xs font-medium">{u.role}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm">
+                  {u.role === 'ADMIN' ? <Shield size={12} className="text-indigo-600" /> : <User size={12} className="text-emerald-600" />}
+                  <span className="text-slate-600 text-xs font-medium">{u.role}</span>
+                </div>
+                {u.email !== 'admin' && (
+                  <button 
+                    onClick={() => handleDelete(u.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-2"
+                    title="Eliminar usuario"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
