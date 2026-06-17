@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Users, Plus, Trash2, Save, AlertCircle, Info, Lock, Edit2, X, LogOut, Copy, CheckCircle2 } from 'lucide-react';
+import { 
+  Building2, 
+  Users, 
+  Save, 
+  CheckCircle2,
+  Trash2,
+  Lock,
+  Plus,
+  ArrowRight,
+  LogOut,
+  Copy,
+  Crown 
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
@@ -319,7 +331,6 @@ export function TeamSection() {
             <div className="flex-1 w-full text-center sm:text-left">
               <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 mb-1">
                 <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{tt.title || 'Empresa'}</p>
                   
                   {isEditingCompany ? (
                     <div className="flex flex-col sm:flex-row items-start gap-2 mt-1 w-full max-w-lg">
@@ -378,7 +389,7 @@ export function TeamSection() {
                 <div className="flex flex-col items-end gap-3">
                   <div className="flex items-center gap-2">
                     <button onClick={handleLeaveTeam} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-100 text-xs font-medium transition-colors shadow-sm" title={isOwner ? "Eliminar equipo o transferir propiedad" : "Salir del Equipo"}>
-                      <LogOut size={14} /> {isOwner ? 'Eliminar / Salir' : 'Salir del Equipo'}
+                      <LogOut size={14} /> {isOwner ? (members.length > 0 ? 'Salir' : 'Eliminar') : 'Salir'}
                     </button>
                     {isOwner && (
                       <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md border border-emerald-100 text-xs font-bold text-emerald-600">
@@ -400,9 +411,6 @@ export function TeamSection() {
                     </div>
                   )}
                 </div>
-              </div>
-              
-              {!isEditingCompany && <p className="text-sm text-slate-500 mt-1">Gestiona los usuarios y accesos de tu espacio de trabajo.</p>}
             </div>
           </div>
 
@@ -426,17 +434,32 @@ export function TeamSection() {
                 )}
               </div>
 
-              {members.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-6 h-40">
-                  <Users size={32} className="mb-2 opacity-50 text-slate-500" />
-                  <p className="text-sm">Aún no hay usuarios en el equipo</p>
-                </div>
-              ) : (
+
                 <motion.div 
                   className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
                   initial="hidden" animate="show"
                   variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }}
                 >
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative group flex flex-col">
+                    <div className="flex flex-col items-center text-center mb-4 mt-2">
+                      <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 text-lg font-bold shadow-sm mb-3">
+                        {owner?.name ? owner.name.substring(0, 2).toUpperCase() : <Users size={20} className="text-slate-300" />}
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm truncate w-full px-2 flex items-center justify-center gap-1">
+                        {owner?.name || 'Propietario'}
+                        <Crown size={14} className="text-amber-500 shrink-0" title="Propietario" />
+                      </h4>
+                      <p className="text-xs text-slate-500 flex items-center justify-center gap-1.5 mt-0.5 w-full truncate px-2">
+                        <span className="truncate">{owner?.email}</span>
+                      </p>
+                    </div>
+                    <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-600">
+                        Fundador
+                      </span>
+                    </div>
+                  </div>
+
                   {members.map(m => (
                     <motion.div 
                       key={m.id}
@@ -469,7 +492,10 @@ export function TeamSection() {
                         <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-700 text-lg font-bold shadow-sm mb-3">
                           {m.name ? m.name.substring(0, 2).toUpperCase() : <Users size={20} className="text-slate-300" />}
                         </div>
-                        <h4 className="font-bold text-slate-800 text-sm truncate w-full px-2">{m.name || 'Sin nombre'}</h4>
+                        <h4 className="font-bold text-slate-800 text-sm truncate w-full px-2 flex items-center justify-center gap-1">
+                          {m.name || 'Sin nombre'}
+                          {m.role === 'ADMIN' && <Crown size={14} className="text-amber-500 shrink-0" title="Administrador" />}
+                        </h4>
                         <p className="text-xs text-slate-500 flex items-center justify-center gap-1.5 mt-0.5 w-full truncate px-2">
                           <span className="truncate">{m.email}</span>
                         </p>
@@ -481,10 +507,10 @@ export function TeamSection() {
                             <select 
                               value={editingMember.role}
                               onChange={(e) => setEditingMember({...editingMember, role: e.target.value})}
-                              className="flex-1 bg-slate-50 border border-slate-200 rounded text-[10px] p-1 font-bold"
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded text-slate-800 text-[10px] p-1 font-bold"
                             >
-                              <option value="USER">Miembro</option>
-                              <option value="ADMIN">Administrador</option>
+                              <option value="USER" className="text-slate-800">Miembro</option>
+                              <option value="ADMIN" className="text-slate-800">Administrador</option>
                             </select>
                             <button onClick={() => handleUpdateRole(m.id, editingMember.role)} className="text-indigo-600 hover:text-indigo-700"><CheckCircle2 size={14} /></button>
                             <button onClick={() => setEditingMember(null)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
@@ -503,7 +529,6 @@ export function TeamSection() {
                     </motion.div>
                   ))}
                 </motion.div>
-              )}
             </div>
 
 

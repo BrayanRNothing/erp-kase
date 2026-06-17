@@ -475,7 +475,7 @@ router.post('/team/members', async (req, res) => {
         email,
         password: hashedPassword,
         parentId: req.user.id,
-        role: 'USER'
+        role: 'ADMIN'
       },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
