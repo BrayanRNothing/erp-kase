@@ -24,6 +24,7 @@ export const translations = {
       ai: 'Asistente IA',
       settings: 'Configuración',
       users: 'Usuarios',
+      team: 'Equipo',
     },
     // Notifications
     notifications: {
@@ -75,6 +76,26 @@ export const translations = {
         subtitle: 'Esta sección está en desarrollo. Estará disponible en futuras actualizaciones.',
       },
     },
+    // Team Section
+    team: {
+      title: 'Equipo y Empresa',
+      subtitle: 'Administra los miembros de tu equipo y el nombre de tu empresa.',
+      companyName: 'Nombre de la Empresa',
+      companyNamePlaceholder: 'Ej. Mi Empresa S.A.',
+      saveCompany: 'Guardar Nombre',
+      members: 'Miembros del Equipo',
+      addMember: 'Agregar Miembro',
+      memberName: 'Nombre',
+      memberEmail: 'Correo Electrónico',
+      memberPassword: 'Contraseña',
+      memberRole: 'Rol',
+      memberSince: 'Miembro desde',
+      add: 'Agregar',
+      cancel: 'Cancelar',
+      delete: 'Eliminar',
+      ownerOnly: 'Solo el dueño de la cuenta puede administrar el equipo.',
+      childView: 'Estás viendo los datos compartidos de la empresa.',
+    },
   },
 
   en: {
@@ -100,6 +121,7 @@ export const translations = {
       ai: 'AI Assistant',
       settings: 'Settings',
       users: 'Users',
+      team: 'Team',
     },
     // Notifications
     notifications: {
@@ -150,6 +172,26 @@ export const translations = {
         title: 'Coming Soon',
         subtitle: 'This section is under development. It will be available in future updates.',
       },
+    },
+    // Team Section
+    team: {
+      title: 'Team & Company',
+      subtitle: 'Manage your team members and company name.',
+      companyName: 'Company Name',
+      companyNamePlaceholder: 'E.g. My Company Inc.',
+      saveCompany: 'Save Name',
+      members: 'Team Members',
+      addMember: 'Add Member',
+      memberName: 'Name',
+      memberEmail: 'Email',
+      memberPassword: 'Password',
+      memberRole: 'Role',
+      memberSince: 'Member since',
+      add: 'Add',
+      cancel: 'Cancel',
+      delete: 'Delete',
+      ownerOnly: 'Only the account owner can manage the team.',
+      childView: 'You are viewing the shared company data.',
     },
   },
 };

@@ -23,7 +23,7 @@ const handleError = (res, error) => {
 router.get('/cards', async (req, res) => {
   try {
     const cards = await prisma.card.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' }
     });
     const mappedCards = cards.map(c => ({
@@ -47,7 +47,7 @@ router.post('/cards', async (req, res) => {
         balance: balance || 0,
         lastFour: last4 || null,
         color: color || null,
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json({
@@ -62,7 +62,7 @@ router.post('/cards', async (req, res) => {
 router.put('/cards/:id', async (req, res) => {
   try {
     const card = await prisma.card.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: req.body
     });
     res.json(card);
@@ -73,10 +73,10 @@ router.delete('/cards/:id', async (req, res) => {
   try {
     // Delete movements first (due to Restrict constraint)
     await prisma.movement.deleteMany({
-      where: { cardId: req.params.id, userId: req.user.id }
+      where: { cardId: req.params.id, userId: req.user.ownerId }
     });
     await prisma.card.delete({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
@@ -86,7 +86,7 @@ router.delete('/cards/:id', async (req, res) => {
 router.get('/movements', async (req, res) => {
   try {
     const movements = await prisma.movement.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { date: 'desc' },
       include: { card: true }
     });
@@ -101,7 +101,7 @@ router.post('/movements', async (req, res) => {
     const movement = await prisma.movement.create({
       data: {
         type, amount, description, category, date: date ? new Date(date) : new Date(),
-        cardId, userId: req.user.id
+        cardId, userId: req.user.ownerId
       }
     });
 
@@ -125,7 +125,7 @@ router.post('/movements', async (req, res) => {
 router.get('/clients', async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(clients);
@@ -142,7 +142,7 @@ router.post('/clients', async (req, res) => {
         phone: phone || null,
         address: address || null,
         type: type || 'client',
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json(client);
@@ -152,7 +152,7 @@ router.post('/clients', async (req, res) => {
 router.put('/clients/:id', async (req, res) => {
   try {
     const client = await prisma.client.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: req.body
     });
     res.json(client);
@@ -162,7 +162,7 @@ router.put('/clients/:id', async (req, res) => {
 router.delete('/clients/:id', async (req, res) => {
   try {
     await prisma.client.delete({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
@@ -172,7 +172,7 @@ router.delete('/clients/:id', async (req, res) => {
 router.get('/budgets', async (req, res) => {
   try {
     const budgets = await prisma.budget.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(budgets);
@@ -188,7 +188,7 @@ router.post('/budgets', async (req, res) => {
         limit: parseFloat(limit) || 0,
         period: period || 'monthly',
         color: color || null,
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json({ ...budget, limit: Number(budget.limit), spent: Number(budget.spent) });
@@ -198,7 +198,7 @@ router.post('/budgets', async (req, res) => {
 router.put('/budgets/:id', async (req, res) => {
   try {
     const budget = await prisma.budget.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: req.body
     });
     res.json(budget);
@@ -208,7 +208,7 @@ router.put('/budgets/:id', async (req, res) => {
 router.delete('/budgets/:id', async (req, res) => {
   try {
     await prisma.budget.delete({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
@@ -218,7 +218,7 @@ router.delete('/budgets/:id', async (req, res) => {
 router.get('/documents', async (req, res) => {
   try {
     const docs = await prisma.document.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' }
     });
     res.json(docs);
@@ -254,7 +254,7 @@ router.post('/documents', async (req, res) => {
         type: type || null,
         size: parseInt(size) || 0,
         fileUrl: finalFileUrl,
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json(doc);
@@ -264,7 +264,7 @@ router.post('/documents', async (req, res) => {
 router.delete('/documents/:id', async (req, res) => {
   try {
     await prisma.document.delete({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
@@ -274,7 +274,7 @@ router.delete('/documents/:id', async (req, res) => {
 router.get('/activity', async (req, res) => {
   try {
     const logs = await prisma.activityLog.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
@@ -285,7 +285,7 @@ router.get('/activity', async (req, res) => {
 router.post('/activity', async (req, res) => {
   try {
     const log = await prisma.activityLog.create({
-      data: { ...req.body, userId: req.user.id }
+      data: { ...req.body, userId: req.user.ownerId }
     });
     res.json(log);
   } catch (error) { handleError(res, error); }
@@ -295,7 +295,7 @@ router.post('/activity', async (req, res) => {
 router.get('/expected-expenses', async (req, res) => {
   try {
     const expenses = await prisma.expectedExpense.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { dueDate: 'asc' }
     });
     res.json(expenses);
@@ -305,7 +305,7 @@ router.get('/expected-expenses', async (req, res) => {
 router.post('/expected-expenses', async (req, res) => {
   try {
     const expense = await prisma.expectedExpense.create({
-      data: { ...req.body, dueDate: new Date(req.body.dueDate), userId: req.user.id }
+      data: { ...req.body, dueDate: new Date(req.body.dueDate), userId: req.user.ownerId }
     });
     res.json(expense);
   } catch (error) { handleError(res, error); }
@@ -314,7 +314,7 @@ router.post('/expected-expenses', async (req, res) => {
 router.delete('/expected-expenses/:id', async (req, res) => {
   try {
     await prisma.expectedExpense.delete({
-      where: { id: req.params.id, userId: req.user.id }
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
@@ -323,7 +323,7 @@ router.delete('/expected-expenses/:id', async (req, res) => {
 router.put('/expected-expenses/:id/pay', async (req, res) => {
   try {
     const expense = await prisma.expectedExpense.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: { status: 'paid' }
     });
     res.json(expense);
@@ -334,7 +334,7 @@ router.put('/expected-expenses/:id/pay', async (req, res) => {
 router.get('/receivables', async (req, res) => {
   try {
     const items = await prisma.receivable.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { dueDate: 'asc' }
     });
     res.json(items);
@@ -350,7 +350,7 @@ router.post('/receivables', async (req, res) => {
         description: description || '',
         amount: parseFloat(amount) || 0,
         dueDate: dueDate ? new Date(dueDate) : (expectedDate ? new Date(expectedDate) : new Date()),
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json(item);
@@ -360,7 +360,7 @@ router.post('/receivables', async (req, res) => {
 router.put('/receivables/:id/collect', async (req, res) => {
   try {
     const item = await prisma.receivable.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: { status: 'paid', paidDate: new Date(), cardId: req.body.cardId }
     });
     res.json(item);
@@ -371,7 +371,7 @@ router.put('/receivables/:id/collect', async (req, res) => {
 router.get('/payables', async (req, res) => {
   try {
     const items = await prisma.payable.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user.ownerId },
       orderBy: { dueDate: 'asc' }
     });
     res.json(items);
@@ -387,7 +387,7 @@ router.post('/payables', async (req, res) => {
         description: description || '',
         amount: parseFloat(amount) || 0,
         dueDate: dueDate ? new Date(dueDate) : (expectedDate ? new Date(expectedDate) : new Date()),
-        userId: req.user.id
+        userId: req.user.ownerId
       }
     });
     res.json(item);
@@ -397,10 +397,95 @@ router.post('/payables', async (req, res) => {
 router.put('/payables/:id/pay', async (req, res) => {
   try {
     const item = await prisma.payable.update({
-      where: { id: req.params.id, userId: req.user.id },
+      where: { id: req.params.id, userId: req.user.ownerId },
       data: { status: 'paid', paidDate: new Date(), cardId: req.body.cardId }
     });
     res.json(item);
+  } catch (error) { handleError(res, error); }
+});
+
+// --- TEAM ---
+router.get('/team', async (req, res) => {
+  try {
+    const isOwner = !req.user.parentId;
+    const ownerId = req.user.ownerId;
+    
+    // Fetch owner details
+    const owner = await prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { id: true, name: true, email: true, companyName: true }
+    });
+
+    // Fetch children
+    const members = await prisma.user.findMany({
+      where: { parentId: ownerId },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+
+    res.json({
+      isOwner,
+      companyName: owner.companyName,
+      owner: { id: owner.id, name: owner.name, email: owner.email },
+      members
+    });
+  } catch (error) { handleError(res, error); }
+});
+
+router.put('/team', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede actualizar la empresa.' });
+    }
+    const { companyName } = req.body;
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { companyName }
+    });
+    res.json({ success: true, companyName: user.companyName });
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/team/members', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede agregar miembros.' });
+    }
+    const { name, email, password } = req.body;
+    
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Email ya registrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const member = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        parentId: req.user.id,
+        role: 'USER'
+      },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(member);
+  } catch (error) { handleError(res, error); }
+});
+
+router.delete('/team/members/:id', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede eliminar miembros.' });
+    }
+    
+    // Ensure the member belongs to this owner
+    const member = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!member || member.parentId !== req.user.id) {
+      return res.status(404).json({ error: 'Miembro no encontrado.' });
+    }
+
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
   } catch (error) { handleError(res, error); }
 });
 

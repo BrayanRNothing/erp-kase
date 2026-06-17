@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ArrowRightLeft, FileText, BarChart3,
   Settings, CreditCard, Users, Calculator, HelpCircle, X,
   Bell, CheckCircle2, AlertCircle, Info, Star, Shield,
-  Calendar, TrendingUp, Wallet, FolderLock, Sparkles, LogOut
+  Calendar, TrendingUp, Wallet, FolderLock, Sparkles, LogOut, Building2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
@@ -20,6 +20,7 @@ import { InvoiceSection } from '../finance/InvoiceSection';
 import { VaultSection } from '../finance/VaultSection';
 import { ClientsSection } from '../finance/ClientsSection';
 import { SettingsSection } from '../settings/SettingsSection';
+import { TeamSection } from '../team/TeamSection';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
@@ -183,12 +184,14 @@ export function BentoLayout() {
     { id: 'budgets',   title: t.sections.budgets,   icon: Calculator,     component: BudgetsSection, theme: 'fuchsia' },
     { id: 'clients',   title: t.sections.clients,   icon: Users,          component: ClientsSection, theme: 'teal' },
     { id: 'guide',     title: t.sections.guide || 'Guía Rápida', icon: HelpCircle, component: (props) => <Placeholder {...props} title={t.sections.guide || 'Guía Rápida'} t={{...t, language}} />, theme: 'pink' },
-    { id: 'settings',  title: t.sections.settings,  icon: Settings,       component: SettingsSection, theme: 'slate' },
+    { id: 'team',      title: t.sections.team || 'Equipo', icon: Building2, component: TeamSection, theme: 'slate' },
   ];
 
   const activeSections = user?.role === 'ADMIN'
-    ? [...SECTIONS, { id: 'users', title: t.sections.users, icon: Users, component: UsersSection, theme: 'blue' }]
-    : SECTIONS;
+    ? [...SECTIONS, { id: 'users', title: t.sections.users, icon: Users, component: UsersSection, theme: 'blue' }, { id: 'settings', title: t.sections.settings, icon: Settings, component: SettingsSection, theme: 'slate' }]
+    : [...SECTIONS, { id: 'settings', title: t.sections.settings, icon: Settings, component: SettingsSection, theme: 'slate' }];
+
+  const gridSections = activeSections.filter(s => s.id !== 'settings');
 
   const selected = activeSections.find(s => s.id === selectedId);
   const avatar = user?.name ? user.name.substring(0, 2).toUpperCase() : 'U';
@@ -209,6 +212,13 @@ export function BentoLayout() {
               <p className="text-slate-800 text-sm font-semibold truncate">{user?.name}</p>
               <p className="text-slate-400 text-xs truncate">{user?.email}</p>
             </div>
+            <button
+              onClick={() => setSelectedId('settings')}
+              className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+              title={t.sections.settings}
+            >
+              <Settings size={16} />
+            </button>
             <button
               onClick={logout}
               className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors shrink-0"
@@ -313,7 +323,7 @@ export function BentoLayout() {
               style={{ width: 'min(85vh, 85vw)', height: 'min(85vh, 85vw)' }}
             >
               <div className="grid grid-cols-3 auto-rows-fr gap-5 w-full h-full overflow-y-auto no-scrollbar p-6 -m-6">
-                {activeSections.map((section) => {
+                {gridSections.map((section) => {
                   const Icon = section.icon;
                   const theme = themeStyles[section.theme];
                   return (

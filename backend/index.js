@@ -78,6 +78,7 @@ const authenticateToken = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token inválido' });
     req.user = user;
+    req.user.ownerId = user.parentId || user.id;
     next();
   });
 };
@@ -119,7 +120,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Generar JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, email: user.email, role: user.role, name: user.name, parentId: user.parentId, companyName: user.companyName },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
