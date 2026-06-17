@@ -12,10 +12,16 @@ model User {
   name      String?
   password  String
   role        Role     @default(USER)
-  companyName String?
-  parentId    String?
-  parent      User?    @relation("UserToUser", fields: [parentId], references: [id])
-  children    User[]   @relation("UserToUser")
+  
+  // Team functionality
+  parentId    String?   // Si es miembro, ID del dueño (owner)
+  companyName String?   // Si es dueño, nombre de la empresa
+  companyLogo String?   // Si es dueño, URL del logo de la empresa
+  teamCode    String?   @unique // Código fijo para unirse al clan/equipo
+  parent      User?     @relation("UserToUser", fields: [parentId], references: [id])
+  children    User[]    @relation("UserToUser")
+  
+  // Relations
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -29,7 +35,7 @@ model User {
   expectedExpenses ExpectedExpense[]
   receivables Receivable[]
   payables Payable[]
-  invitations Invitation[] @relation("UserInvitations")
+
 }
 
 enum Role {
@@ -227,11 +233,4 @@ model Payable {
   updatedAt   DateTime @updatedAt
 }
 
-model Invitation {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  teamId    String
-  status    String   @default("PENDING") // PENDING, ACCEPTED, REVOKED
-  createdAt DateTime @default(now())
-  creator   User     @relation("UserInvitations", fields: [teamId], references: [id], onDelete: Cascade)
-}
+

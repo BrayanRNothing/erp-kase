@@ -413,7 +413,7 @@ router.get('/team', async (req, res) => {
     // Fetch owner details
     const owner = await prisma.user.findUnique({
       where: { id: ownerId },
-      select: { id: true, name: true, email: true, companyName: true }
+      select: { id: true, name: true, email: true, companyName: true, companyLogo: true, teamCode: true }
     });
 
     // Fetch children
@@ -422,18 +422,13 @@ router.get('/team', async (req, res) => {
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
-    // Fetch pending invitations
-    const invitations = await prisma.invitation.findMany({
-      where: { teamId: ownerId, status: 'PENDING' },
-      select: { id: true, token: true, status: true, createdAt: true }
-    });
-
     res.json({
       isOwner,
       companyName: owner.companyName,
+      companyLogo: owner.companyLogo,
+      teamCode: isOwner ? owner.teamCode : null,
       owner: { id: owner.id, name: owner.name, email: owner.email },
-      members,
-      invitations
+      members
     });
   } catch (error) { handleError(res, error); }
 });
@@ -443,47 +438,48 @@ router.put('/team', async (req, res) => {
     if (req.user.parentId) {
       return res.status(403).json({ error: 'Solo el dueño puede actualizar la empresa.' });
     }
-    const { companyName } = req.body;
+    const { companyName, companyLogo } = req.body;
+    
+    // Si no tiene teamCode, generar uno al crear la empresa por primera vez
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const newTeamCode = currentUser.teamCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+
     const user = await prisma.user.update({
       where: { id: req.user.id },
-      data: { companyName }
-    });
-    res.json({ success: true, companyName: user.companyName });
-  } catch (error) { handleError(res, error); }
-});
-
-router.post('/team/invites', async (req, res) => {
-  try {
-    if (req.user.parentId) {
-      return res.status(403).json({ error: 'Solo el dueño puede generar invitaciones.' });
-    }
-    
-    // Generate a simple 6-character alphanumeric code
-    const token = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    const invitation = await prisma.invitation.create({
-      data: {
-        token,
-        teamId: req.user.id
+      data: { 
+        companyName,
+        companyLogo: companyLogo !== undefined ? companyLogo : currentUser.companyLogo,
+        teamCode: newTeamCode
       }
     });
-    res.json(invitation);
+    res.json({ success: true, companyName: user.companyName, companyLogo: user.companyLogo, teamCode: user.teamCode });
   } catch (error) { handleError(res, error); }
 });
 
-router.delete('/team/invites/:id', async (req, res) => {
+router.post('/team/members', async (req, res) => {
   try {
     if (req.user.parentId) {
-      return res.status(403).json({ error: 'Solo el dueño puede revocar invitaciones.' });
+      return res.status(403).json({ error: 'Solo el dueño puede crear miembros.' });
     }
+    const { name, email, password } = req.body;
     
-    const invite = await prisma.invitation.findUnique({ where: { id: req.params.id } });
-    if (!invite || invite.teamId !== req.user.id) {
-      return res.status(404).json({ error: 'Invitación no encontrada.' });
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Email ya registrado.' });
     }
 
-    await prisma.invitation.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const member = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        parentId: req.user.id,
+        role: 'USER'
+      },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(member);
   } catch (error) { handleError(res, error); }
 });
 
@@ -496,21 +492,15 @@ router.post('/team/join', async (req, res) => {
       return res.status(400).json({ error: 'Eres dueño de un equipo, no puedes unirte a otro.' });
     }
     
-    const invitation = await prisma.invitation.findUnique({ where: { token } });
-    if (!invitation || invitation.status !== 'PENDING') {
-      return res.status(400).json({ error: 'Código de invitación inválido o ya usado.' });
+    const owner = await prisma.user.findUnique({ where: { teamCode: token } });
+    if (!owner) {
+      return res.status(400).json({ error: 'Código de equipo inválido.' });
     }
 
     // Join team
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { parentId: invitation.teamId, role: 'USER' }
-    });
-
-    // Mark invitation as used (ACCEPTED)
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: 'ACCEPTED' }
+      data: { parentId: owner.id, role: 'USER' }
     });
 
     res.json({ success: true });

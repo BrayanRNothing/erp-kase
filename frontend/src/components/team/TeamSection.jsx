@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Users, Plus, Trash2, Save, AlertCircle, Info, Lock, Edit2, X, LogOut, Copy, CheckCircle2, Mail } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Building2, Users, Plus, Trash2, Save, AlertCircle, Info, Lock, Edit2, X, LogOut, Copy, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
@@ -15,9 +15,10 @@ export function TeamSection() {
 
   const [isOwner, setIsOwner] = useState(false);
   const [companyName, setCompanyName] = useState('');
+  const [companyLogo, setCompanyLogo] = useState('');
+  const [teamCode, setTeamCode] = useState('');
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [members, setMembers] = useState([]);
-  const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // States for No Team view
@@ -26,6 +27,11 @@ export function TeamSection() {
 
   // States for editing roles
   const [editingMember, setEditingMember] = useState(null);
+
+  // States for creating user
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,8 +50,9 @@ export function TeamSection() {
         const data = await res.json();
         setIsOwner(data.isOwner);
         setCompanyName(data.companyName || '');
+        setCompanyLogo(data.companyLogo || '');
+        setTeamCode(data.teamCode || '');
         setMembers(data.members || []);
-        setInvitations(data.invitations || []);
       }
     } catch (err) {
       console.error(err);
@@ -54,7 +61,7 @@ export function TeamSection() {
     }
   };
 
-  const handleUpdateCompany = async (nameToUpdate = companyName) => {
+  const handleUpdateCompany = async (nameToUpdate = companyName, logoToUpdate = companyLogo) => {
     try {
       setError(''); setSuccess('');
       const res = await fetch(`${API_URL}/team`, {
@@ -63,13 +70,15 @@ export function TeamSection() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ companyName: nameToUpdate })
+        body: JSON.stringify({ companyName: nameToUpdate, companyLogo: logoToUpdate })
       });
       const data = await res.json();
       if (res.ok) {
         setSuccess('Empresa guardada');
-        updateUser({ companyName: data.companyName });
+        updateUser({ companyName: data.companyName, companyLogo: data.companyLogo });
         setCompanyName(data.companyName);
+        setCompanyLogo(data.companyLogo || '');
+        setTeamCode(data.teamCode);
         setIsEditingCompany(false);
         setTimeout(() => setSuccess(''), 3000);
       } else {
@@ -95,7 +104,7 @@ export function TeamSection() {
       if (res.ok) {
         setSuccess('¡Te has unido al equipo!');
         setTimeout(() => {
-          window.location.reload(); // Recargar para actualizar todo el contexto global
+          window.location.reload(); 
         }, 1500);
       } else {
         const data = await res.json();
@@ -108,7 +117,7 @@ export function TeamSection() {
 
   const handleCreateTeam = async (e) => {
     e.preventDefault();
-    await handleUpdateCompany(createCompanyName);
+    await handleUpdateCompany(createCompanyName, '');
   };
 
   const handleLeaveTeam = async () => {
@@ -133,41 +142,31 @@ export function TeamSection() {
     }
   };
 
-  const handleGenerateInvite = async () => {
+  const handleCreateMember = async (e) => {
+    e.preventDefault();
     try {
       setError(''); setSuccess('');
-      const res = await fetch(`${API_URL}/team/invites`, {
+      const res = await fetch(`${API_URL}/team/members`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: newUserName, email: newUserEmail, password: newUserPassword })
       });
       const data = await res.json();
       if (res.ok) {
-        setInvitations([data, ...invitations]);
-        setSuccess('Invitación generada');
+        setMembers([data, ...members]);
+        setNewUserName('');
+        setNewUserEmail('');
+        setNewUserPassword('');
+        setSuccess('Usuario creado exitosamente');
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(data.error);
       }
     } catch (err) {
-      setError('Error al generar invitación');
-    }
-  };
-
-  const handleRevokeInvite = async (id) => {
-    if (!confirm('¿Estás seguro de revocar esta invitación?')) return;
-    try {
-      const res = await fetch(`${API_URL}/team/invites/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setInvitations(invitations.filter(i => i.id !== id));
-      } else {
-        const data = await res.json();
-        alert(data.error);
-      }
-    } catch (err) {
-      console.error(err);
+      setError('Error al crear usuario');
     }
   };
 
@@ -223,8 +222,6 @@ export function TeamSection() {
     return <div className="h-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div></div>;
   }
 
-  // Determine if the user is in an active team
-  // A user has a team if they are NOT the owner (they joined one), OR if they are the owner and have set a companyName.
   const hasTeam = !isOwner || (isOwner && companyName);
 
   return (
@@ -255,7 +252,7 @@ export function TeamSection() {
               <Users size={32} />
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">Unirse a un Equipo</h2>
-            <p className="text-sm text-slate-500 mb-6">Ingresa el código de invitación que te compartió tu administrador.</p>
+            <p className="text-sm text-slate-500 mb-6">Ingresa el código del clan o empresa para unirte.</p>
             
             <form onSubmit={handleJoinTeam} className="w-full flex flex-col gap-4">
               <input 
@@ -280,7 +277,7 @@ export function TeamSection() {
               <Building2 size={32} />
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">Crear mi Empresa</h2>
-            <p className="text-sm text-slate-500 mb-6">Crea un espacio de trabajo propio para invitar a tu equipo y gestionar datos.</p>
+            <p className="text-sm text-slate-500 mb-6">Crea un espacio de trabajo propio para agregar a tus usuarios y gestionar datos.</p>
             
             <form onSubmit={handleCreateTeam} className="w-full flex flex-col gap-4">
               <input 
@@ -305,8 +302,14 @@ export function TeamSection() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-5 shrink-0">
             
             {/* Logo */}
-            <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-800 text-2xl font-bold shadow-sm shrink-0">
-              {companyName ? companyName.substring(0, 2).toUpperCase() : <Building2 size={32} className="text-slate-300" />}
+            <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-800 text-2xl font-bold shadow-sm shrink-0 overflow-hidden">
+              {companyLogo ? (
+                <img src={companyLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : companyName ? (
+                companyName.substring(0, 2).toUpperCase()
+              ) : (
+                <Building2 size={32} className="text-slate-300" />
+              )}
             </div>
 
             {/* Info */}
@@ -316,27 +319,40 @@ export function TeamSection() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{tt.title || 'Empresa'}</p>
                   
                   {isEditingCompany ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="text"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Nombre de la empresa"
-                        className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold text-lg focus:outline-none focus:border-indigo-500 w-full sm:w-64"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => handleUpdateCompany()}
-                        className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                      >
-                        <Save size={16} />
-                      </button>
-                      <button
-                        onClick={() => setIsEditingCompany(false)}
-                        className="p-1.5 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-colors"
-                      >
-                        <X size={16} />
-                      </button>
+                    <div className="flex flex-col sm:flex-row items-start gap-2 mt-1 w-full max-w-lg">
+                      <div className="flex flex-col gap-2 w-full">
+                        <input
+                          type="text"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          placeholder="Nombre de la empresa"
+                          className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-bold text-lg focus:outline-none focus:border-indigo-500 w-full"
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={companyLogo}
+                          onChange={(e) => setCompanyLogo(e.target.value)}
+                          placeholder="URL del Logo (Opcional)"
+                          className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 text-sm focus:outline-none focus:border-indigo-500 w-full"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateCompany()}
+                          className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                          title="Guardar"
+                        >
+                          <Save size={18} />
+                        </button>
+                        <button
+                          onClick={() => setIsEditingCompany(false)}
+                          className="p-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-slate-200 transition-colors"
+                          title="Cancelar"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center sm:justify-start gap-2 group">
@@ -346,7 +362,8 @@ export function TeamSection() {
                       {isOwner && (
                         <button
                           onClick={() => setIsEditingCompany(true)}
-                          className="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="Ajustes del equipo"
                         >
                           <Edit2 size={16} />
                         </button>
@@ -366,7 +383,7 @@ export function TeamSection() {
                 )}
               </div>
               
-              <p className="text-sm text-slate-500">Gestiona los miembros y accesos de tu espacio de trabajo.</p>
+              {!isEditingCompany && <p className="text-sm text-slate-500 mt-1">Gestiona los usuarios y accesos de tu espacio de trabajo.</p>}
             </div>
           </div>
 
@@ -375,7 +392,7 @@ export function TeamSection() {
             <div className="flex-1 flex flex-col overflow-y-auto pr-2 custom-scrollbar">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-slate-800">Miembros Activos</h3>
+                  <h3 className="text-lg font-bold text-slate-800">Usuarios</h3>
                   <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full">
                     {members.length}
                   </span>
@@ -385,7 +402,7 @@ export function TeamSection() {
               {members.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-6 h-40">
                   <Users size={32} className="mb-2 opacity-50 text-slate-500" />
-                  <p className="text-sm">Aún no hay miembros en el equipo</p>
+                  <p className="text-sm">Aún no hay usuarios en el equipo</p>
                 </div>
               ) : (
                 <motion.div 
@@ -462,68 +479,68 @@ export function TeamSection() {
               )}
             </div>
 
-            {/* INVITATIONS SIDEBAR */}
+            {/* SIDEBAR */}
             {isOwner && (
-              <div className="w-full lg:w-80 flex flex-col shrink-0">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                      <Mail size={18} className="text-indigo-600" /> Invitaciones
-                    </h3>
-                  </div>
-                  
-                  <button
-                    onClick={handleGenerateInvite}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl transition-colors shadow-sm mb-6"
-                  >
-                    <Plus size={16} />
-                    <span className="font-medium text-sm">Generar Código</span>
-                  </button>
-
-                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
-                    {invitations.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">No hay invitaciones pendientes</p>
-                    ) : (
-                      <AnimatePresence>
-                        {invitations.map(inv => (
-                          <motion.div 
-                            key={inv.id}
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-2 relative overflow-hidden"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {new Date(inv.createdAt).toLocaleDateString()}
-                              </span>
-                              <button 
-                                onClick={() => handleRevokeInvite(inv.id)}
-                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                title="Revocar invitación"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <code className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 font-mono text-sm text-center font-bold tracking-widest">
-                                {inv.token}
-                              </code>
-                              <button 
-                                onClick={() => copyToClipboard(inv.token)}
-                                className={`p-1.5 rounded-lg transition-colors border ${copiedToken === inv.token ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-slate-500 hover:text-slate-700 border-slate-200 shadow-sm'}`}
-                                title="Copiar código"
-                              >
-                                {copiedToken === inv.token ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                              </button>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    )}
+              <div className="w-full lg:w-80 flex flex-col shrink-0 gap-5">
+                {/* Team Code Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                    <Lock size={18} className="text-indigo-600" /> Código del Equipo
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Comparte este ID fijo para que otros usuarios se unan a tu empresa desde su cuenta.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 font-mono text-lg text-center font-bold tracking-widest">
+                      {teamCode || '------'}
+                    </code>
+                    <button 
+                      onClick={() => copyToClipboard(teamCode)}
+                      className={`p-2.5 rounded-lg transition-colors border ${copiedToken === teamCode ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-white text-slate-500 hover:text-slate-700 border-slate-200 shadow-sm'}`}
+                      title="Copiar código"
+                    >
+                      {copiedToken === teamCode ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+                    </button>
                   </div>
                 </div>
+
+                {/* Create Member Form */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                    <Plus size={18} className="text-indigo-600" /> Crear usuario manual
+                  </h3>
+                  <form onSubmit={handleCreateMember} className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      placeholder="Nombre del usuario"
+                      value={newUserName}
+                      onChange={e => setNewUserName(e.target.value)}
+                      required
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 bg-slate-50"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Correo electrónico"
+                      value={newUserEmail}
+                      onChange={e => setNewUserEmail(e.target.value)}
+                      required
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 bg-slate-50"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Contraseña"
+                      value={newUserPassword}
+                      onChange={e => setNewUserPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 bg-slate-50"
+                    />
+                    <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 rounded-xl transition-colors shadow-sm mt-1 text-sm">
+                      Añadir Usuario
+                    </button>
+                  </form>
+                </div>
+
               </div>
             )}
           </div>
