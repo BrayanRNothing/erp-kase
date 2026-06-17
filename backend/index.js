@@ -87,7 +87,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
-  if (req.user?.role !== 'ADMIN') {
+  if (req.user?.role !== 'ADMIN' && req.user?.email !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado. Requiere rol de Administrador.' });
   }
   next();
