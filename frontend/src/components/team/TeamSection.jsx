@@ -43,9 +43,6 @@ export function TeamSection() {
   const [joinToken, setJoinToken] = useState('');
   const [createCompanyName, setCreateCompanyName] = useState('');
 
-  // States for editing roles
-  const [editingMember, setEditingMember] = useState(null);
-  const [isEditingMember, setIsEditingMember] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
 
   // States for creating user
@@ -204,28 +201,7 @@ export function TeamSection() {
     }
   };
 
-  const handleUpdateRole = async (id, newRole) => {
-    try {
-      const res = await fetch(`${API_URL}/team/members/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-      if (res.ok) {
-        setMembers(members.map(m => m.id === id ? { ...m, role: newRole } : m));
-        setEditingMember(null);
-        toast.success('Rol actualizado exitosamente');
-      } else {
-        const data = await res.json();
-        toast.error(data.error);
-      }
-    } catch (err) {
-      toast.error('Error al actualizar rol');
-    }
-  };
+  // handleUpdateRole removed as Admin role distinction is no longer used
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -454,13 +430,7 @@ export function TeamSection() {
                       {/* Actions */}
                       {isOwner && (
                         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => setEditingMember(m)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Editar Rol"
-                          >
-                            <Edit2 size={14} />
-                          </button>
+                          {/* Edit role removed */}
                           {m.role !== 'ADMIN' && (
                             <button
                               onClick={() => handleDeleteMember(m.id)}
@@ -479,7 +449,6 @@ export function TeamSection() {
                         </div>
                         <h4 className="font-bold text-slate-800 text-sm truncate w-full px-2 flex items-center justify-center gap-1">
                           {m.name || 'Sin nombre'}
-                          {m.role === 'ADMIN' && <Crown size={14} className="text-amber-500 shrink-0" title="Administrador" />}
                         </h4>
                         <p className="text-xs text-slate-500 flex items-center justify-center gap-1.5 mt-0.5 w-full truncate px-2">
                           <span className="truncate">{m.email}</span>
@@ -487,29 +456,14 @@ export function TeamSection() {
                       </div>
 
                       <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                        {editingMember?.id === m.id ? (
-                          <div className="w-full flex items-center gap-2">
-                            <select 
-                              value={editingMember.role}
-                              onChange={(e) => setEditingMember({...editingMember, role: e.target.value})}
-                              className="flex-1 bg-slate-50 border border-slate-200 rounded text-slate-800 text-[10px] p-1 font-bold"
-                            >
-                              <option value="USER" className="text-slate-800">Miembro</option>
-                              <option value="ADMIN" className="text-slate-800">Administrador</option>
-                            </select>
-                            <button onClick={() => handleUpdateRole(m.id, editingMember.role)} className="text-indigo-600 hover:text-indigo-700"><CheckCircle2 size={14} /></button>
-                            <button onClick={() => setEditingMember(null)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${m.role === 'ADMIN' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
-                              {m.role === 'ADMIN' ? 'Administrador' : 'Miembro'}
-                            </span>
-                            <span className="text-[10px] font-medium text-slate-400">
-                              {new Date(m.createdAt).toLocaleDateString()}
-                            </span>
-                          </>
-                        )}
+                        <>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">
+                            Miembro
+                          </span>
+                          <span className="text-[10px] font-medium text-slate-400">
+                            {new Date(m.createdAt).toLocaleDateString()}
+                          </span>
+                        </>
                       </div>
                     </motion.div>
                   ))}
