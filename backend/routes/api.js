@@ -12,6 +12,14 @@ const uploadsDir = path.join(__dirname, '../uploads');
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-me';
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user.id, email: user.email, role: user.role, name: user.name, parentId: user.parentId, companyName: user.companyName },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+};
 
 // Helper para responder errores
 const handleError = (res, error) => {
@@ -469,7 +477,8 @@ router.put('/team', async (req, res) => {
         teamCode: newTeamCode
       }
     });
-    res.json({ success: true, companyName: user.companyName, companyLogo: user.companyLogo, teamCode: user.teamCode });
+    const { password, ...userWithoutPassword } = user;
+    res.json({ success: true, companyName: user.companyName, companyLogo: user.companyLogo, teamCode: user.teamCode, token: generateToken(user), user: userWithoutPassword });
   } catch (error) { handleError(res, error); }
 });
 
@@ -515,12 +524,13 @@ router.post('/team/join', async (req, res) => {
     }
 
     // Join team
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: { parentId: owner.id, role: 'USER' }
     });
 
-    res.json({ success: true });
+    const { password: _p, ...userWithoutPassword } = updatedUser;
+    res.json({ success: true, token: generateToken(updatedUser), user: userWithoutPassword });
   } catch (error) { handleError(res, error); }
 });
 
@@ -528,11 +538,12 @@ router.post('/team/leave', async (req, res) => {
   try {
     if (req.user.parentId) {
       // User is a member, just leave
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
         data: { parentId: null, role: 'USER' }
       });
-      return res.json({ success: true, message: 'Has abandonado el equipo' });
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      return res.json({ success: true, message: 'Has abandonado el equipo', token: generateToken(updatedUser), user: userWithoutPassword });
     }
 
     // User is the OWNER
@@ -544,11 +555,12 @@ router.post('/team/leave', async (req, res) => {
     
     if (members.length === 0) {
       // Owner is alone, delete team info
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
         data: { companyName: null, companyLogo: null, teamCode: null }
       });
-      return res.json({ success: true, message: 'Equipo eliminado' });
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      return res.json({ success: true, message: 'Equipo eliminado', token: generateToken(updatedUser), user: userWithoutPassword });
     }
 
     // Owner has members, transfer ownership
@@ -556,7 +568,7 @@ router.post('/team/leave', async (req, res) => {
     const ownerData = await prisma.user.findUnique({ where: { id: req.user.id } });
 
     // 1. Clear old owner FIRST to avoid teamCode unique constraint violation
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: { companyName: null, companyLogo: null, teamCode: null, role: 'USER' }
     });
@@ -588,7 +600,8 @@ router.post('/team/leave', async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: 'Has dejado el equipo y transferido la propiedad' });
+    const { password: _p, ...userWithoutPassword } = updatedUser;
+    res.json({ success: true, message: 'Has dejado el equipo y transferido la propiedad', token: generateToken(updatedUser), user: userWithoutPassword });
   } catch (error) { handleError(res, error); }
 });
 

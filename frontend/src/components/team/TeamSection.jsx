@@ -89,8 +89,14 @@ export function TeamSection() {
       });
       const data = await res.json();
       if (res.ok) {
+        if (data.token) localStorage.setItem('token', data.token);
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          updateUser(data.user);
+        } else {
+          updateUser({ companyName: data.companyName, companyLogo: data.companyLogo });
+        }
         toast.success('Empresa guardada');
-        updateUser({ companyName: data.companyName, companyLogo: data.companyLogo });
         setCompanyName(data.companyName);
         setCompanyLogo(data.companyLogo || '');
         setTeamCode(data.teamCode);
@@ -114,13 +120,15 @@ export function TeamSection() {
         },
         body: JSON.stringify({ token: joinToken })
       });
+      const data = await res.json();
       if (res.ok) {
+        if (data.token) localStorage.setItem('token', data.token);
+        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
         toast.success('¡Te has unido al equipo!');
         setTimeout(() => {
           window.location.reload(); 
         }, 1500);
       } else {
-        const data = await res.json();
         toast.error(data.error);
       }
     } catch (err) {
@@ -143,13 +151,15 @@ export function TeamSection() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const data = await res.json();
       if (res.ok) {
+        if (data.token) localStorage.setItem('token', data.token);
+        if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
         toast.success('Has salido del equipo');
         setTimeout(() => {
           window.location.reload();
         }, 1500);
       } else {
-        const data = await res.json();
         toast.error(data.error);
       }
     } catch (err) {
