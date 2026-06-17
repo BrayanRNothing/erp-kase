@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Users, Plus, Trash2, Save, AlertCircle, Info, Lock, Edit2, X, LogOut, Copy, CheckCircle2 } from 'lucide-react';
+import { Building2, Users, Plus, Trash2, Save, AlertCircle, Info, Lock, Edit2, X, LogOut, Copy, CheckCircle2, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
