@@ -6,18 +6,19 @@ import {
   AlertCircle, X, Search, History, DollarSign, MapPin, Tag, Box
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BoteSVG, TamborSVG, CubetaSVG, TinaSVG } from './ContainerSVGs';
+import { BoteSVG, TamborSVG, PinturaSVG, GalonSVG } from './ContainerSVGs';
 
 const CONTAINER_TYPES = [
   { id: 'Bote', component: BoteSVG },
-  { id: 'Tina', component: TinaSVG },
   { id: 'Tambor', component: TamborSVG },
-  { id: 'Cubeta', component: CubetaSVG },
+  { id: 'Pintura', component: PinturaSVG },
+  { id: 'Galón', component: GalonSVG },
 ];
 
 const PRESET_COLORS = [
   '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
-  '#8B5CF6', '#EC4899', '#64748B', '#06B6D4'
+  '#8B5CF6', '#EC4899', '#64748B', '#06B6D4',
+  '#14B8A6', '#F97316', '#EAB308', '#FFFFFF'
 ];
 
 export function InventorySection({ title }) {
@@ -201,34 +202,41 @@ export function InventorySection({ title }) {
               const isLowStock = item.stock <= item.minStock;
 
               return (
-                <div key={item.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition-all p-5 flex flex-col relative group cursor-pointer" onClick={() => openKardex(item)}>
+                <div key={item.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative group cursor-pointer" onClick={() => openKardex(item)}>
                   
-                  {/* Category Tag */}
-                  <div className="absolute top-4 left-4">
+                  {/* Category Tag & Edit Button */}
+                  <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">
                       {item.category}
                     </span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); openModal(item); }} 
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 size={14} />
+                    </button>
                   </div>
 
-                  {/* Visual SVG */}
-                  <div className="w-full h-32 flex items-center justify-center mt-6 mb-4">
-                    <div className="w-24 h-24">
+                  {/* Visual SVG - Smaller */}
+                  <div className="w-full h-24 flex items-center justify-center mt-6 mb-3">
+                    <div className="w-16 h-16">
                       {renderSVG(item.containerType, item.color)}
                     </div>
                   </div>
 
-                  <div className="text-center mb-4">
-                    <h3 className="font-black text-lg text-slate-800 truncate" title={item.name}>{item.name}</h3>
-                    <p className="text-sm text-slate-500">{Number(item.capacity)} {item.unit} • {item.containerType}</p>
+                  <div className="text-center mb-3">
+                    <h3 className="font-black text-base text-slate-800 truncate" title={item.name}>{item.name}</h3>
+                    <p className="text-xs text-slate-500">{Number(item.capacity)} {item.unit} • {item.containerType}</p>
                     {item.location && (
-                      <p className="text-xs text-slate-400 mt-1 flex items-center justify-center gap-1">
-                        <MapPin size={12} /> {item.location}
+                      <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-center gap-1">
+                        <MapPin size={10} /> {item.location}
                       </p>
                     )}
                   </div>
 
                   {/* Quick Controls */}
-                  <div className="mt-auto bg-slate-50 rounded-2xl p-3 flex items-center justify-between border border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  <div className="mt-auto bg-slate-50 rounded-2xl p-2.5 flex items-center justify-between border border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Físico</span>
                       <div className="flex items-center gap-1.5">
@@ -291,9 +299,6 @@ export function InventorySection({ title }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { setIsKardexOpen(false); openModal(currentItem); }} className="p-2 text-slate-400 hover:text-indigo-600 bg-white rounded-lg border border-slate-200 shadow-sm">
-                    <Edit2 size={16} />
-                  </button>
                   <button onClick={() => setIsKardexOpen(false)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
                     <X size={20} />
                   </button>
