@@ -98,6 +98,31 @@ export function InventoryProvider({ children }) {
     } catch (e) { console.error(e); }
   };
 
+  const saveRecipe = async (finalProductId, ingredients) => {
+    try {
+      const updated = await apiCall(`/inventory/recipes/${finalProductId}`, {
+        method: 'POST',
+        body: JSON.stringify({ ingredients })
+      });
+      setInventory(inventory.map(item => item.id === finalProductId ? updated : item));
+    } catch (e) { console.error(e); }
+  };
+
+  const craftProduct = async (finalProductId, craftQuantity) => {
+    try {
+      await apiCall(`/inventory/craft/${finalProductId}`, {
+        method: 'POST',
+        body: JSON.stringify({ craftQuantity })
+      });
+      // It emits 'updateData' inside api.js middleware on success, 
+      // which will trigger fetchInventory(), syncing raw materials and final products automatically.
+      return { success: true };
+    } catch (e) { 
+      console.error(e); 
+      return { success: false, error: e.message };
+    }
+  };
+
   return (
     <InventoryContext.Provider value={{
       inventory,
@@ -106,6 +131,8 @@ export function InventoryProvider({ children }) {
       deleteInventoryItem,
       adjustStock,
       addMovement,
+      saveRecipe,
+      craftProduct,
       loading
     }}>
       {!loading && children}

@@ -3,10 +3,11 @@ import { useInventory } from '../../context/InventoryContext';
 import { useFinance } from '../../context/FinanceContext';
 import { 
   Package, Plus, Minus, Trash2, Edit2, 
-  AlertCircle, X, Search, History, DollarSign, MapPin, Tag, Box
+  AlertCircle, X, Search, History, DollarSign, Box
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BoteSVG, TamborSVG, PinturaSVG, GalonSVG } from './ContainerSVGs';
+import { BoteSVG, TamborSVG, PinturaSVG, GalonSVG, renderSVG } from './ContainerSVGs';
+import AlchemyTable from './AlchemyTable';
 
 const CONTAINER_TYPES = [
   { id: 'Bote', component: BoteSVG },
@@ -23,16 +24,17 @@ const PRESET_COLORS = [
 
 export function InventorySection({ title }) {
   const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, addMovement } = useInventory();
-  const { clients } = useFinance(); // for providers
+  const { clients } = useFinance();
   
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('Todas');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   
   const [isKardexOpen, setIsKardexOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedCraftProduct, setSelectedCraftProduct] = useState(null);
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     containerType: 'Tambor',
@@ -49,14 +51,17 @@ export function InventorySection({ title }) {
 
   const providers = clients.filter(c => c.type === 'provider');
 
-  const filteredInventory = inventory.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.containerType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalValue = inventory.reduce((sum, item) => sum + (Number(item.unitCost) * item.stock), 0);
-  const lowStockCount = inventory.filter(item => item.stock <= item.minStock).length;
+  const filteredInventory = inventory.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.containerType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.category.toLowerCase().includes(searchTerm.toLowerCase());
+                          
+    const matchesTab = activeTab === 'Todas' ? true : 
+                       activeTab === 'Otros' ? (!['Materia Prima', 'Producto Terminado'].includes(item.category)) : 
+                       item.category === activeTab;
+                       
+    return matchesSearch && matchesTab;
+  });
 
   const openModal = (item = null) => {
     if (item) {
@@ -102,7 +107,6 @@ export function InventorySection({ title }) {
     e.preventDefault();
     if (editingItem) {
       await updateInventoryItem(editingItem.id, formData);
-      // Update selected item in kardex if it's open
       if (selectedItem && selectedItem.id === editingItem.id) {
         setSelectedItem({ ...selectedItem, ...formData });
       }
@@ -112,14 +116,7 @@ export function InventorySection({ title }) {
     closeModal();
   };
 
-  const renderSVG = (type, color) => {
-    const found = CONTAINER_TYPES.find(c => c.id === type);
-    const SvgComponent = found ? found.component : BoteSVG;
-    return <SvgComponent color={color} className="w-full h-full drop-shadow-md" />;
-  };
-
   const openKardex = (item) => {
-    // Find latest item version from inventory to ensure movements are updated
     const updatedItem = inventory.find(i => i.id === item.id) || item;
     setSelectedItem(updatedItem);
     setIsKardexOpen(true);
@@ -127,59 +124,20 @@ export function InventorySection({ title }) {
 
   const handleQuickMovement = async (item, type, qty, reason) => {
     await addMovement(item.id, type, qty, reason);
-    const updated = inventory.find(i => i.id === item.id);
-    if (selectedItem && selectedItem.id === item.id) {
-      // It will auto-update because we re-fetch context, but for immediate UI feel:
-      // In next render, openKardex finds the updated one anyway if re-rendered.
-    }
   };
 
   return (
     <div className="h-full flex flex-col">
-      {/* DASHBOARD METRICS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 shrink-0">
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4">
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-            <Box size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Total de Artículos</p>
-            <p className="text-2xl font-black text-slate-800">{inventory.length}</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Valor de Inventario</p>
-            <p className="text-2xl font-black text-slate-800">
-              ${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${lowStockCount > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-400'}`}>
-            <AlertCircle size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Alertas de Stock</p>
-            <p className="text-2xl font-black text-slate-800">{lowStockCount}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* HEADER & SEARCH */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar químicos, categorías..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-          />
+        <div className="flex gap-2">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" placeholder="Buscar productos..." 
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
+            />
+          </div>
         </div>
         <button
           onClick={() => openModal()}
@@ -189,168 +147,118 @@ export function InventorySection({ title }) {
         </button>
       </div>
 
-      {/* INVENTORY GRID */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {filteredInventory.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Package size={48} className="opacity-20" />
-            <p>No hay artículos registrados.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-6">
-            {filteredInventory.map((item) => {
-              const isLowStock = item.stock <= item.minStock;
-
-              return (
-                <div key={item.id} className="bg-white rounded-[20px] border border-slate-100 shadow-sm hover:shadow-md transition-all p-3 flex flex-col relative group cursor-pointer" onClick={() => openKardex(item)}>
-                  
-                  {/* Category Tag & Edit Button */}
-                  <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-sm text-slate-500 rounded-md">
-                      {item.category}
-                    </span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); openModal(item); }} 
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
-                      title="Editar"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                  </div>
-
-                  {/* Visual SVG - Protagonist */}
-                  <div className="w-full h-28 flex items-center justify-center mt-5 mb-2">
-                    <div className="w-28 h-28 hover:scale-110 transition-transform duration-300">
-                      {renderSVG(item.containerType, item.color)}
-                    </div>
-                  </div>
-
-                  <div className="text-center mb-2">
-                    <h3 className="font-bold text-sm text-slate-800 truncate" title={item.name}>{item.name}</h3>
-                  </div>
-
-                  {/* Info & Stock Row */}
-                  <div className="mt-auto flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                    
-                    {/* Left: Capacity and Type */}
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-600">{Number(item.capacity)}{item.unit}</span>
-                      <span className="text-[9px] text-slate-400">{item.containerType}</span>
-                    </div>
-
-                    {/* Right: Stock Controls */}
-                    <div className="flex items-center bg-slate-50 rounded-lg border border-slate-100 p-0.5">
-                      <button 
-                        onClick={() => handleQuickMovement(item, 'OUT', 1, 'Salida rápida')}
-                        disabled={item.stock <= 0}
-                        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 transition-all"
-                      >
-                        <Minus size={12} />
-                      </button>
-                      
-                      <div className="w-7 flex flex-col items-center justify-center relative">
-                        {isLowStock && <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
-                        <span className={`text-[11px] font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
-                          {item.stock}
-                        </span>
-                      </div>
-
-                      <button 
-                        onClick={() => handleQuickMovement(item, 'IN', 1, 'Entrada rápida')}
-                        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+        {['Todas', 'Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* KARDEX DRAWER */}
-      <AnimatePresence>
-        {isKardexOpen && selectedItem && (() => {
-          // ensure we have the most up to date item from context
-          const currentItem = inventory.find(i => i.id === selectedItem.id) || selectedItem;
-          
-          return (
-          <div className="fixed inset-0 z-40 flex justify-end">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
-              onClick={() => setIsKardexOpen(false)}
-            />
-            <motion.div 
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-full max-w-md bg-white h-full shadow-2xl relative z-50 flex flex-col"
-            >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10">
-                    {renderSVG(currentItem.containerType, currentItem.color)}
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-lg text-slate-800">{currentItem.name}</h2>
-                    <p className="text-xs text-slate-500">{currentItem.category}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setIsKardexOpen(false)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Stock Actual</p>
-                    <p className="text-3xl font-black text-slate-800">{currentItem.stock} <span className="text-sm font-medium text-slate-400">/ {currentItem.capacity}{currentItem.unit}</span></p>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total</p>
-                    <p className="text-3xl font-black text-indigo-600">${(Number(currentItem.unitCost) * currentItem.stock).toLocaleString('es-MX')}</p>
-                  </div>
-                </div>
-
-                {/* Kardex List */}
-                <div>
-                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <History size={18} className="text-slate-400"/> Historial de Movimientos
-                  </h3>
-                  
-                  {(!currentItem.movements || currentItem.movements.length === 0) ? (
-                    <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-xl">No hay movimientos registrados.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {currentItem.movements.map((mov) => (
-                        <div key={mov.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">{mov.reason}</p>
-                            <p className="text-xs text-slate-400">{new Date(mov.date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
-                          </div>
-                          <div className={`px-3 py-1 rounded-lg text-sm font-bold ${mov.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                            {mov.type === 'IN' ? '+' : '-'}{mov.quantity}
-                          </div>
-                        </div>
-                      ))}
+      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-280px)] min-h-[600px]">
+        <div className="w-full lg:w-[60%] flex flex-col h-full overflow-y-auto custom-scrollbar pr-2">
+          {filteredInventory.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-slate-100 border-dashed text-slate-500 h-64">
+              <Package size={48} className="text-slate-300 mb-4" />
+              <p>No hay artículos registrados o encontrados.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
+              {filteredInventory.map((item) => {
+                const isLowStock = item.stock <= item.minStock;
+                return (
+                  <div 
+                    key={item.id} 
+                    className={`bg-white rounded-[20px] border shadow-sm hover:shadow-md transition-all p-3 flex flex-col relative group cursor-pointer ${selectedCraftProduct?.id === item.id ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100'}`} 
+                    onClick={() => {
+                      if (item.category === 'Producto Terminado') {
+                        setSelectedCraftProduct(item);
+                      } else {
+                        openKardex(item);
+                      }
+                    }}
+                  >
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-sm text-slate-500 rounded-md">
+                        {item.category}
+                      </span>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {item.category === 'Producto Terminado' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); openKardex(item); }} 
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
+                            title="Historial Kardex"
+                          >
+                            <History size={12} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openModal(item); }} 
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Add Movement Action */}
-              <div className="p-6 border-t border-slate-100 bg-slate-50 shrink-0">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Registrar Movimiento Manual</p>
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const qty = parseInt(e.target.qty.value);
+                    <div className="w-full h-28 flex items-center justify-center mt-5 mb-2">
+                      <div className="w-28 h-28 hover:scale-110 transition-transform duration-300">
+                        {renderSVG(item.containerType, item.color)}
+                      </div>
+                    </div>
+
+                    <div className="text-center mb-2">
+                      <h3 className="font-bold text-sm text-slate-800 truncate" title={item.name}>{item.name}</h3>
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-600">{Number(item.capacity)}{item.unit}</span>
+                      </div>
+                      <div className="flex items-center bg-slate-50 rounded-lg border border-slate-100 p-0.5">
+                        <button 
+                          onClick={() => handleQuickMovement(item, 'OUT', 1, 'Salida rápida')}
+                          disabled={item.stock <= 0}
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 transition-all"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <div className="w-7 flex flex-col items-center justify-center relative">
+                          {isLowStock && <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
+                          <span className={`text-[11px] font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
+                            {item.stock}
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => handleQuickMovement(item, 'IN', 1, 'Entrada rápida')}
+                          className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className="w-full lg:w-[40%] h-full">
+          <AlchemyTable selectedProduct={selectedCraftProduct} />
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isKardexOpen && selectedItem && (
+          <div className="fixed inset-0 z-40 flex justify-end">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsKardexOpen(false)} />
+            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="w-full max-w-md bg-white h-full shadow-2xl relative z-50 flex flex-col">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
                     const reason = e.target.reason.value;
                     const type = e.nativeEvent.submitter.value; // 'IN' or 'OUT'
                     handleQuickMovement(currentItem, type, qty, reason);

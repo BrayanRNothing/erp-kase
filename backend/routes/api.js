@@ -652,7 +652,11 @@ router.get('/inventory', async (req, res) => {
     const items = await prisma.inventoryItem.findMany({
       where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' },
-      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
+      include: { 
+        provider: true, 
+        movements: { orderBy: { date: 'desc' } },
+        recipesAsFinal: { include: { rawMaterial: true } }
+      }
     });
     res.json(items);
   } catch (error) { handleError(res, error); }
@@ -676,7 +680,7 @@ router.post('/inventory', async (req, res) => {
         providerId: providerId || null,
         userId: req.user.ownerId
       },
-      include: { provider: true, movements: true }
+      include: { provider: true, movements: true, recipesAsFinal: { include: { rawMaterial: true } } }
     });
     res.json(item);
   } catch (error) { handleError(res, error); }
@@ -701,7 +705,7 @@ router.put('/inventory/:id', async (req, res) => {
     const item = await prisma.inventoryItem.update({
       where: { id: req.params.id, userId: req.user.ownerId },
       data: updateData,
-      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
+      include: { provider: true, movements: { orderBy: { date: 'desc' } }, recipesAsFinal: { include: { rawMaterial: true } } }
     });
     res.json(item);
   } catch (error) { handleError(res, error); }
@@ -747,10 +751,83 @@ router.post('/inventory/:id/movements', async (req, res) => {
     const updatedItem = await prisma.inventoryItem.update({
       where: { id: item.id },
       data: { stock: newStock },
-      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
+      include: { provider: true, movements: { orderBy: { date: 'desc' } }, recipesAsFinal: { include: { rawMaterial: true } } }
     });
 
     res.json(updatedItem);
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/inventory/recipes/:finalProductId', async (req, res) => {
+  try {
+    const { finalProductId } = req.params;
+    const { ingredients } = req.body;
+    
+    const product = await prisma.inventoryItem.findUnique({ where: { id: finalProductId, userId: req.user.ownerId } });
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    await prisma.recipeIngredient.deleteMany({ where: { finalProductId } });
+
+    if (ingredients && ingredients.length > 0) {
+      const data = ingredients.map(ing => ({
+        finalProductId,
+        rawMaterialId: ing.rawMaterialId,
+        quantity: parseFloat(ing.quantity)
+      }));
+      await prisma.recipeIngredient.createMany({ data });
+    }
+
+    const updatedProduct = await prisma.inventoryItem.findUnique({
+      where: { id: finalProductId },
+      include: { provider: true, movements: { orderBy: { date: 'desc' } }, recipesAsFinal: { include: { rawMaterial: true } } }
+    });
+    res.json(updatedProduct);
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/inventory/craft/:finalProductId', async (req, res) => {
+  try {
+    const { finalProductId } = req.params;
+    const { craftQuantity } = req.body;
+    const qty = parseInt(craftQuantity) || 1;
+
+    const product = await prisma.inventoryItem.findUnique({ 
+      where: { id: finalProductId, userId: req.user.ownerId },
+      include: { recipesAsFinal: { include: { rawMaterial: true } } }
+    });
+
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+    if (product.recipesAsFinal.length === 0) return res.status(400).json({ error: 'Este producto no tiene receta.' });
+
+    for (const ing of product.recipesAsFinal) {
+      const needed = Number(ing.quantity) * qty;
+      if (ing.rawMaterial.stock < needed) {
+        return res.status(400).json({ error: `Stock insuficiente de ${ing.rawMaterial.name}. Se requieren ${needed}.` });
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const ing of product.recipesAsFinal) {
+        const needed = Number(ing.quantity) * qty;
+        await tx.inventoryItem.update({
+          where: { id: ing.rawMaterialId },
+          data: { stock: { decrement: needed } }
+        });
+        await tx.inventoryMovement.create({
+          data: { type: 'OUT', quantity: needed, reason: `Producción de ${product.name}`, itemId: ing.rawMaterialId, userId: req.user.ownerId }
+        });
+      }
+
+      await tx.inventoryItem.update({
+        where: { id: finalProductId },
+        data: { stock: { increment: qty } }
+      });
+      await tx.inventoryMovement.create({
+        data: { type: 'IN', quantity: qty, reason: `Fabricación`, itemId: finalProductId, userId: req.user.ownerId }
+      });
+    });
+
+    res.json({ success: true });
   } catch (error) { handleError(res, error); }
 });
 
