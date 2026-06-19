@@ -47,10 +47,10 @@ export default function AlchemyTable({ selectedProduct }) {
   const handleCraft = async () => {
     setLoading(true);
     setErrorMsg('');
-    
+
     // Simulate delay for a better UX
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     const res = await craftProduct(selectedProduct.id, craftQuantity);
     if (!res.success) {
       setErrorMsg(res.error || 'Error al fabricar');
@@ -103,7 +103,7 @@ export default function AlchemyTable({ selectedProduct }) {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 relative">
-        
+
         {errorMsg && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl flex items-start gap-3 text-sm">
             <AlertCircle size={18} className="shrink-0 mt-0.5" />
@@ -124,7 +124,7 @@ export default function AlchemyTable({ selectedProduct }) {
                     <Plus size={14} /> Añadir
                   </button>
                 </div>
-                
+
                 {newIngredients.length === 0 ? (
                   <div className="text-center py-8 text-sm text-slate-400 border-2 border-dashed border-slate-100 rounded-xl">
                     No hay ingredientes. Añade materia prima para crear la receta.
@@ -132,26 +132,40 @@ export default function AlchemyTable({ selectedProduct }) {
                 ) : (
                   <div className="space-y-3">
                     {newIngredients.map((ing, idx) => (
-                      <div key={idx} className="flex gap-3 items-center bg-slate-50 p-2 rounded-xl">
-                        <select 
-                          className="flex-1 bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                          value={ing.rawMaterialId}
-                          onChange={(e) => handleUpdateIngredient(idx, 'rawMaterialId', e.target.value)}
+                      <div key={idx} className="flex flex-col gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 relative">
+                        <button 
+                          onClick={() => handleRemoveIngredient(idx)} 
+                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-100 rounded-lg transition-colors" 
+                          title="Quitar ingrediente"
                         >
-                          {rawMaterials.map(rm => (
-                            <option key={rm.id} value={rm.id}>{rm.name} ({rm.stock} {rm.unit} disp.)</option>
-                          ))}
-                        </select>
-                        <input 
-                          type="number" min="0.1" step="0.1"
-                          className="w-24 bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
-                          value={ing.quantity}
-                          onChange={(e) => handleUpdateIngredient(idx, 'quantity', e.target.value)}
-                          placeholder="Cant."
-                        />
-                        <button onClick={() => handleRemoveIngredient(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                           <X size={16} />
                         </button>
+                        
+                        <div className="pr-8">
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Materia Prima</label>
+                          <select 
+                            className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                            value={ing.rawMaterialId}
+                            onChange={(e) => handleUpdateIngredient(idx, 'rawMaterialId', e.target.value)}
+                          >
+                            {rawMaterials.map(rm => (
+                              <option key={rm.id} value={rm.id}>{rm.name} - {Number(rm.capacity)}{rm.unit}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cantidad Requerida</label>
+                          <div className="relative">
+                            <input 
+                              type="number" min="0.1" step="0.1"
+                              className="w-full bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                              value={ing.quantity}
+                              onChange={(e) => handleUpdateIngredient(idx, 'quantity', e.target.value)}
+                              placeholder="Ej. 1"
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -160,10 +174,10 @@ export default function AlchemyTable({ selectedProduct }) {
             </motion.div>
           ) : (
             <motion.div key="crafting" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center min-h-[400px] h-full relative">
-              
+
               {/* Decorative Background */}
               <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '24px 24px' }}></div>
-              
+
               {/* Visual Alchemy Tree */}
               <div className="relative w-full max-w-md mx-auto z-10 flex flex-col items-center">
                 {/* Ingredients Row */}
@@ -186,19 +200,19 @@ export default function AlchemyTable({ selectedProduct }) {
                             <div className="flex justify-between items-center text-[10px]">
                               <span className="text-slate-400 font-medium">Requiere:</span>
                               <span className={`font-black ${enoughStock ? 'text-indigo-600' : 'text-red-600'}`}>
-                                {ing.quantity * craftQuantity} {latestRM.unit}
+                                {ing.quantity * craftQuantity} {latestRM.containerType}
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-[10px]">
                               <span className="text-slate-400 font-medium">Stock:</span>
                               <span className="font-bold text-slate-600">
-                                {latestRM.stock} {latestRM.unit}
+                                {latestRM.stock} {latestRM.containerType}
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-[10px] pt-1 border-t border-slate-100/60">
                               <span className="text-slate-400 font-medium">Quedará:</span>
                               <span className={`font-bold ${enoughStock ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {remaining} {latestRM.unit}
+                                {remaining} {latestRM.containerType}
                               </span>
                             </div>
                           </div>
@@ -242,11 +256,11 @@ export default function AlchemyTable({ selectedProduct }) {
         {/* Success Modal Overlay */}
         <AnimatePresence>
           {showSuccessModal && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: -20 }}
                 className="bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex flex-col items-center text-center max-w-[200px]"
               >
@@ -272,8 +286,8 @@ export default function AlchemyTable({ selectedProduct }) {
                 Cancelar
               </button>
             )}
-            <button 
-              onClick={handleSaveRecipe} 
+            <button
+              onClick={handleSaveRecipe}
               disabled={loading || newIngredients.length === 0}
               className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -284,14 +298,14 @@ export default function AlchemyTable({ selectedProduct }) {
           <div className="flex gap-3">
             <div className="relative flex items-center">
               <span className="absolute left-4 text-xs font-bold text-slate-400">Qty</span>
-              <input 
-                type="number" min="1" 
+              <input
+                type="number" min="1"
                 value={craftQuantity}
                 onChange={(e) => setCraftQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                 className="w-24 pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
               />
             </div>
-            <button 
+            <button
               onClick={handleCraft}
               disabled={loading || showSuccessModal}
               className={`flex-1 py-3 font-bold rounded-xl text-sm transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 group ${loading ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'}`}
