@@ -147,7 +147,7 @@ export function InventorySection({ title }) {
         </button>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar shrink-0">
         {['Todas', 'Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
           <button
             key={tab}
