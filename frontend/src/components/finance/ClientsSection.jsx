@@ -74,38 +74,38 @@ export function ClientsSection() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative group"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between mb-4 relative">
+                    <div className="flex items-center gap-3 min-w-0 w-full pr-8">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${client.type === 'client' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
                         {client.type === 'client' ? <Users size={20} /> : <Briefcase size={20} />}
                       </div>
-                      <div>
-                        <h3 className="text-slate-800 font-bold text-base truncate pr-2" title={client.name}>{client.name}</h3>
-                        <span className={`text-[10px] uppercase tracking-wider font-bold ${client.type === 'client' ? 'text-indigo-500' : 'text-emerald-500'}`}>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-slate-800 font-bold text-base truncate" title={client.name}>{client.name}</h3>
+                        <span className={`text-[10px] uppercase tracking-wider font-bold block truncate ${client.type === 'client' ? 'text-indigo-500' : 'text-emerald-500'}`}>
                           {client.type === 'client' ? 'Client' : 'Provider'}
                         </span>
                       </div>
                     </div>
                     <button
                       onClick={() => deleteClient(client.id)}
-                      className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all absolute top-4 right-4"
+                      className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all absolute -top-1 -right-1"
                     >
                       <Trash2 size={16} />
                     </button>
                   </div>
                   
                   <div className="space-y-2 mt-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
                       <Mail size={14} className="text-slate-400 shrink-0" />
-                      <span className="truncate">{client.email || '—'}</span>
+                      <span className="truncate min-w-0 flex-1">{client.email || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
                       <Phone size={14} className="text-slate-400 shrink-0" />
-                      <span className="truncate">{client.phone || '—'}</span>
+                      <span className="truncate min-w-0 flex-1">{client.phone || '—'}</span>
                     </div>
-                    <div className="flex items-start gap-2 text-sm text-slate-600">
+                    <div className="flex items-start gap-2 text-sm text-slate-600 min-w-0">
                       <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                      <span className="line-clamp-2">{client.address || '—'}</span>
+                      <span className="line-clamp-2 min-w-0 flex-1">{client.address || '—'}</span>
                     </div>
                   </div>
                 </motion.div>
