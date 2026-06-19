@@ -27,7 +27,7 @@ export function InventorySection({ title }) {
   const { clients } = useFinance();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('Todas');
+  const [activeTab, setActiveTab] = useState('Producto Terminado');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
@@ -153,7 +153,7 @@ export function InventorySection({ title }) {
           </div>
 
           <div className="flex gap-2 overflow-x-auto custom-scrollbar shrink-0">
-            {['Todas', 'Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
+            {['Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
