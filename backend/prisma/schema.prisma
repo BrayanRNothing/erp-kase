@@ -36,6 +36,7 @@ model User {
   receivables Receivable[]
   payables Payable[]
   inventoryItems InventoryItem[]
+  inventoryMovements InventoryMovement[]
 
 }
 
@@ -245,12 +246,33 @@ model InventoryItem {
   stock           Int      @default(0) // cantidad física de botes
   minStock        Int      @default(0) // Alerta de stock bajo
   
+  category        String   @default("Materia Prima")
+  color           String   @default("#3B82F6")
+  location        String?
+  unitCost        Decimal  @default(0.00) @db.Decimal(12, 2)
+  
   providerId      String?
   provider        Client?  @relation(fields: [providerId], references: [id])
   
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  movements       InventoryMovement[]
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model InventoryMovement {
+  id              String   @id @default(uuid())
+  type            String   // "IN", "OUT", "ADJUST"
+  quantity        Int
+  reason          String
+  date            DateTime @default(now())
+  
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

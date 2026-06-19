@@ -76,10 +76,24 @@ export function InventoryProvider({ children }) {
     } catch (e) { console.error(e); }
   };
 
-  const adjustStock = async (id, newStock) => {
+  const adjustStock = async (id, newStock, reason = 'Ajuste manual') => {
     if (newStock < 0) return;
     try {
-      const updated = await apiCall(`/inventory/${id}`, { method: 'PUT', body: JSON.stringify({ stock: newStock }) });
+      const updated = await apiCall(`/inventory/${id}/movements`, { 
+        method: 'POST', 
+        body: JSON.stringify({ type: 'ADJUST', quantity: newStock, reason }) 
+      });
+      setInventory(inventory.map(item => item.id === id ? updated : item));
+    } catch (e) { console.error(e); }
+  };
+
+  const addMovement = async (id, type, quantity, reason) => {
+    if (quantity <= 0) return;
+    try {
+      const updated = await apiCall(`/inventory/${id}/movements`, { 
+        method: 'POST', 
+        body: JSON.stringify({ type, quantity, reason }) 
+      });
       setInventory(inventory.map(item => item.id === id ? updated : item));
     } catch (e) { console.error(e); }
   };
@@ -91,6 +105,7 @@ export function InventoryProvider({ children }) {
       updateInventoryItem,
       deleteInventoryItem,
       adjustStock,
+      addMovement,
       loading
     }}>
       {!loading && children}

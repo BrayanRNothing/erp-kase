@@ -644,6 +644,201 @@ router.delete('/team/members/:id', async (req, res) => {
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }
+      companyName: owner.companyName,
+      companyLogo: owner.companyLogo,
+      teamCode: isOwner ? owner.teamCode : null,
+      owner: { id: owner.id, name: owner.name, email: owner.email },
+      members
+    });
+  } catch (error) { handleError(res, error); }
+});
+
+router.put('/team', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede actualizar la empresa.' });
+    }
+    const { companyName, companyLogo } = req.body;
+    
+    // Si no tiene teamCode, generar uno al crear la empresa por primera vez
+    const currentUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const newTeamCode = currentUser.teamCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { 
+        companyName,
+        companyLogo: companyLogo !== undefined ? companyLogo : currentUser.companyLogo,
+        teamCode: newTeamCode
+      }
+    });
+    const { password, ...userWithoutPassword } = user;
+    res.json({ success: true, companyName: user.companyName, companyLogo: user.companyLogo, teamCode: user.teamCode, token: generateToken(user), user: userWithoutPassword });
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/team/members', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede crear miembros.' });
+    }
+    const { name, email, password } = req.body;
+    
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Email ya registrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const member = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        parentId: req.user.id,
+        role: 'USER'
+      },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(member);
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/team/join', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    // Si el usuario ya es dueño de un equipo o ya está en uno
+    if (req.user.companyName) {
+      return res.status(400).json({ error: 'Eres dueño de un equipo, no puedes unirte a otro.' });
+    }
+    
+    const owner = await prisma.user.findUnique({ where: { teamCode: token } });
+    if (!owner) {
+      return res.status(400).json({ error: 'Código de equipo inválido.' });
+    }
+
+    // Join team
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { parentId: owner.id, role: 'USER' }
+    });
+
+    const { password: _p, ...userWithoutPassword } = updatedUser;
+    res.json({ success: true, token: generateToken(updatedUser), user: userWithoutPassword });
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/team/leave', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      // User is a member, just leave
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { parentId: null, role: 'USER' }
+      });
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      return res.json({ success: true, message: 'Has abandonado el equipo', token: generateToken(updatedUser), user: userWithoutPassword });
+    }
+
+    // User is the OWNER
+    if (!req.user.companyName) {
+      return res.status(400).json({ error: 'No estás en un equipo.' });
+    }
+
+    const members = await prisma.user.findMany({ where: { parentId: req.user.id } });
+    
+    if (members.length === 0) {
+      // Owner is alone, delete team info
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { companyName: null, companyLogo: null, teamCode: null }
+      });
+      const { password: _p, ...userWithoutPassword } = updatedUser;
+      return res.json({ success: true, message: 'Equipo eliminado', token: generateToken(updatedUser), user: userWithoutPassword });
+    }
+
+    // Owner has members, transfer ownership
+    const newOwner = members.find(m => m.role === 'ADMIN') || members[0];
+    const ownerData = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    // 1. Clear old owner FIRST to avoid teamCode unique constraint violation
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { companyName: null, companyLogo: null, teamCode: null, role: 'USER' }
+    });
+
+    // 2. Update other members to point to new owner
+    await prisma.user.updateMany({
+      where: { parentId: req.user.id, id: { not: newOwner.id } },
+      data: { parentId: newOwner.id }
+    });
+
+    // 3. Promote new owner
+    await prisma.user.update({
+      where: { id: newOwner.id },
+      data: {
+        parentId: null,
+        role: 'USER', // Changed from ADMIN to USER since we simplified roles
+        companyName: ownerData.companyName,
+        companyLogo: ownerData.companyLogo,
+        teamCode: ownerData.teamCode
+      }
+    });
+
+    // 4. Transfer business data
+    const tables = ['card', 'movement', 'invoice', 'client', 'budget', 'document', 'activityLog', 'expectedExpense', 'receivable', 'payable', 'inventoryItem'];
+    for (const table of tables) {
+      await prisma[table].updateMany({
+        where: { userId: req.user.id },
+        data: { userId: newOwner.id }
+      });
+    }
+
+    const { password: _p, ...userWithoutPassword } = updatedUser;
+    res.json({ success: true, message: 'Has dejado el equipo y transferido la propiedad', token: generateToken(updatedUser), user: userWithoutPassword });
+  } catch (error) { handleError(res, error); }
+});
+
+router.put('/team/members/:id', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede editar miembros.' });
+    }
+    const { role } = req.body;
+    
+    const member = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!member || member.parentId !== req.user.id) {
+      return res.status(404).json({ error: 'Miembro no encontrado.' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { role }
+    });
+    res.json(updated);
+  } catch (error) { handleError(res, error); }
+});
+
+router.delete('/team/members/:id', async (req, res) => {
+  try {
+    if (req.user.parentId) {
+      return res.status(403).json({ error: 'Solo el dueño puede eliminar miembros.' });
+    }
+    
+    // Ensure the member belongs to this owner
+    const member = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!member || member.parentId !== req.user.id) {
+      return res.status(404).json({ error: 'Miembro no encontrado.' });
+    }
+
+    // Instead of deleting the user, we just kick them from the team
+    await prisma.user.update({ 
+      where: { id: req.params.id },
+      data: { parentId: null }
+    });
+    res.json({ success: true });
+  } catch (error) { handleError(res, error); }
 });
 
 // --- INVENTORY ---
@@ -652,7 +847,7 @@ router.get('/inventory', async (req, res) => {
     const items = await prisma.inventoryItem.findMany({
       where: { userId: req.user.ownerId },
       orderBy: { createdAt: 'desc' },
-      include: { provider: true }
+      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
     });
     res.json(items);
   } catch (error) { handleError(res, error); }
@@ -660,7 +855,7 @@ router.get('/inventory', async (req, res) => {
 
 router.post('/inventory', async (req, res) => {
   try {
-    const { name, containerType, capacity, unit, stock, minStock, providerId } = req.body;
+    const { name, containerType, capacity, unit, stock, minStock, providerId, category, color, location, unitCost } = req.body;
     const item = await prisma.inventoryItem.create({
       data: {
         name,
@@ -669,10 +864,14 @@ router.post('/inventory', async (req, res) => {
         unit,
         stock: parseInt(stock) || 0,
         minStock: parseInt(minStock) || 0,
+        category: category || "Materia Prima",
+        color: color || "#3B82F6",
+        location: location || null,
+        unitCost: parseFloat(unitCost) || 0,
         providerId: providerId || null,
         userId: req.user.ownerId
       },
-      include: { provider: true }
+      include: { provider: true, movements: true }
     });
     res.json(item);
   } catch (error) { handleError(res, error); }
@@ -680,7 +879,7 @@ router.post('/inventory', async (req, res) => {
 
 router.put('/inventory/:id', async (req, res) => {
   try {
-    const { name, containerType, capacity, unit, stock, minStock, providerId } = req.body;
+    const { name, containerType, capacity, unit, stock, minStock, providerId, category, color, location, unitCost } = req.body;
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (containerType !== undefined) updateData.containerType = containerType;
@@ -689,11 +888,15 @@ router.put('/inventory/:id', async (req, res) => {
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (minStock !== undefined) updateData.minStock = parseInt(minStock);
     if (providerId !== undefined) updateData.providerId = providerId || null;
+    if (category !== undefined) updateData.category = category;
+    if (color !== undefined) updateData.color = color;
+    if (location !== undefined) updateData.location = location;
+    if (unitCost !== undefined) updateData.unitCost = parseFloat(unitCost);
 
     const item = await prisma.inventoryItem.update({
       where: { id: req.params.id, userId: req.user.ownerId },
       data: updateData,
-      include: { provider: true }
+      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
     });
     res.json(item);
   } catch (error) { handleError(res, error); }
@@ -705,6 +908,44 @@ router.delete('/inventory/:id', async (req, res) => {
       where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/inventory/:id/movements', async (req, res) => {
+  try {
+    const { type, quantity, reason } = req.body;
+    const item = await prisma.inventoryItem.findUnique({ where: { id: req.params.id } });
+    if (!item || item.userId !== req.user.ownerId) {
+      return res.status(404).json({ error: 'Item no encontrado' });
+    }
+
+    const newStock = type === 'IN' ? item.stock + parseInt(quantity) : 
+                     type === 'OUT' ? item.stock - parseInt(quantity) : 
+                     parseInt(quantity); // For ADJUST, quantity is the exact new stock
+
+    const diff = type === 'ADJUST' ? newStock - item.stock : parseInt(quantity);
+    const movType = type === 'ADJUST' ? (diff >= 0 ? 'IN' : 'OUT') : type;
+    const movQty = Math.abs(diff);
+
+    // Create movement
+    await prisma.inventoryMovement.create({
+      data: {
+        type: movType,
+        quantity: movQty,
+        reason: reason || 'Ajuste manual',
+        itemId: item.id,
+        userId: req.user.ownerId
+      }
+    });
+
+    // Update item stock
+    const updatedItem = await prisma.inventoryItem.update({
+      where: { id: item.id },
+      data: { stock: newStock },
+      include: { provider: true, movements: { orderBy: { date: 'desc' } } }
+    });
+
+    res.json(updatedItem);
   } catch (error) { handleError(res, error); }
 });
 
