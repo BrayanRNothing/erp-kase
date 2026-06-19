@@ -127,6 +127,7 @@ export function InventorySection({ title }) {
   };
 
   return (
+    <>
     <div className="h-full flex flex-col lg:flex-row bg-slate-50/50">
       
       {/* Left Column: Inventory */}
@@ -528,6 +529,6 @@ export function InventorySection({ title }) {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }
