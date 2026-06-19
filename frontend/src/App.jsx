@@ -2,6 +2,7 @@ import { BentoLayout } from './components/layout/BentoLayout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider } from './context/FinanceContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { InventoryProvider } from './context/InventoryContext';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { ActivityProvider } from './context/ActivityContext';
 import { Toaster } from 'react-hot-toast';
@@ -28,7 +29,9 @@ function App() {
       <AuthProvider>
         <ActivityProvider>
           <FinanceProvider>
-            <MainApp />
+            <InventoryProvider>
+              <MainApp />
+            </InventoryProvider>
           </FinanceProvider>
         </ActivityProvider>
       </AuthProvider>

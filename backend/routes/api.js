@@ -592,7 +592,7 @@ router.post('/team/leave', async (req, res) => {
     });
 
     // 4. Transfer business data
-    const tables = ['card', 'movement', 'invoice', 'client', 'budget', 'document', 'activityLog', 'expectedExpense', 'receivable', 'payable'];
+    const tables = ['card', 'movement', 'invoice', 'client', 'budget', 'document', 'activityLog', 'expectedExpense', 'receivable', 'payable', 'inventoryItem'];
     for (const table of tables) {
       await prisma[table].updateMany({
         where: { userId: req.user.id },
@@ -641,6 +641,68 @@ router.delete('/team/members/:id', async (req, res) => {
     await prisma.user.update({ 
       where: { id: req.params.id },
       data: { parentId: null }
+    });
+    res.json({ success: true });
+  } catch (error) { handleError(res, error); }
+});
+
+// --- INVENTORY ---
+router.get('/inventory', async (req, res) => {
+  try {
+    const items = await prisma.inventoryItem.findMany({
+      where: { userId: req.user.ownerId },
+      orderBy: { createdAt: 'desc' },
+      include: { provider: true }
+    });
+    res.json(items);
+  } catch (error) { handleError(res, error); }
+});
+
+router.post('/inventory', async (req, res) => {
+  try {
+    const { name, containerType, capacity, unit, stock, minStock, providerId } = req.body;
+    const item = await prisma.inventoryItem.create({
+      data: {
+        name,
+        containerType,
+        capacity: parseFloat(capacity) || 0,
+        unit,
+        stock: parseInt(stock) || 0,
+        minStock: parseInt(minStock) || 0,
+        providerId: providerId || null,
+        userId: req.user.ownerId
+      },
+      include: { provider: true }
+    });
+    res.json(item);
+  } catch (error) { handleError(res, error); }
+});
+
+router.put('/inventory/:id', async (req, res) => {
+  try {
+    const { name, containerType, capacity, unit, stock, minStock, providerId } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (containerType !== undefined) updateData.containerType = containerType;
+    if (capacity !== undefined) updateData.capacity = parseFloat(capacity);
+    if (unit !== undefined) updateData.unit = unit;
+    if (stock !== undefined) updateData.stock = parseInt(stock);
+    if (minStock !== undefined) updateData.minStock = parseInt(minStock);
+    if (providerId !== undefined) updateData.providerId = providerId || null;
+
+    const item = await prisma.inventoryItem.update({
+      where: { id: req.params.id, userId: req.user.ownerId },
+      data: updateData,
+      include: { provider: true }
+    });
+    res.json(item);
+  } catch (error) { handleError(res, error); }
+});
+
+router.delete('/inventory/:id', async (req, res) => {
+  try {
+    await prisma.inventoryItem.delete({
+      where: { id: req.params.id, userId: req.user.ownerId }
     });
     res.json({ success: true });
   } catch (error) { handleError(res, error); }

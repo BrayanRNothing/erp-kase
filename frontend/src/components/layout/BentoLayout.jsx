@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ArrowRightLeft, FileText, BarChart3,
   Settings, CreditCard, Users, Calculator, HelpCircle, X,
   Bell, CheckCircle2, AlertCircle, Info, Star, Shield,
-  Calendar, TrendingUp, Wallet, FolderLock, Sparkles, LogOut, Building2
+  Calendar, TrendingUp, Wallet, FolderLock, Sparkles, LogOut, Building2, Package
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
@@ -21,20 +21,23 @@ import { VaultSection } from '../finance/VaultSection';
 import { ClientsSection } from '../finance/ClientsSection';
 import { SettingsSection } from '../settings/SettingsSection';
 import { TeamSection } from '../team/TeamSection';
+import { InventorySection } from '../inventory/InventorySection';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
 // ── Placeholder ──
-function Placeholder({ title, t }) {
+function Placeholder({ title, t, icon: Icon = HelpCircle, description }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-300">
       <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-        <HelpCircle className="w-8 h-8 text-indigo-400" />
+        <Icon className="w-8 h-8 text-indigo-400" />
       </div>
-      <p className="text-xl font-medium tracking-wide text-slate-400">{title || t.sections.guide}</p>
-      <p className="text-sm text-slate-400 text-center max-w-xs px-2">
-        {t.language === 'en' ? 'Click here to start the interactive guided tour.' : 'Haz clic aquí para iniciar el recorrido guiado interactivo.'}
-      </p>
+      <p className="text-xl font-medium tracking-wide text-slate-400">{title}</p>
+      {description && (
+        <p className="text-sm text-slate-400 text-center max-w-xs px-2">
+          {description}
+        </p>
+      )}
     </div>
   );
 }
@@ -183,7 +186,7 @@ export function BentoLayout() {
     { id: 'vault',     title: t.sections.vault,     icon: FolderLock,     component: VaultSection, theme: 'violet' },
     { id: 'budgets',   title: t.sections.budgets,   icon: Calculator,     component: BudgetsSection, theme: 'fuchsia' },
     { id: 'clients',   title: t.sections.clients,   icon: Users,          component: ClientsSection, theme: 'teal' },
-    { id: 'guide',     title: t.sections.guide || 'Guía Rápida', icon: HelpCircle, component: (props) => <Placeholder {...props} title={t.sections.guide || 'Guía Rápida'} t={{...t, language}} />, theme: 'pink' },
+    { id: 'inventory', title: t.sections.inventory || 'Inventario', icon: Package, component: InventorySection, theme: 'pink' },
     { id: 'team',      title: t.sections.team || 'Equipo', icon: Building2, component: TeamSection, theme: 'slate' },
   ];
 

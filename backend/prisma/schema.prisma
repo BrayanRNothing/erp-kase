@@ -35,6 +35,7 @@ model User {
   expectedExpenses ExpectedExpense[]
   receivables Receivable[]
   payables Payable[]
+  inventoryItems InventoryItem[]
 
 }
 
@@ -153,6 +154,8 @@ model Client {
   userId    String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  inventoryItems InventoryItem[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -233,4 +236,21 @@ model Payable {
   updatedAt   DateTime @updatedAt
 }
 
-
+model InventoryItem {
+  id              String   @id @default(uuid())
+  name            String   // Nombre del químico / producto
+  containerType   String   // "Bote", "Tina", "Tambor", "Cubeta", etc.
+  capacity        Decimal  @db.Decimal(12, 2) // cantidad que contiene el bote
+  unit            String   // "L", "kg", "ml", "g"
+  stock           Int      @default(0) // cantidad física de botes
+  minStock        Int      @default(0) // Alerta de stock bajo
+  
+  providerId      String?
+  provider        Client?  @relation(fields: [providerId], references: [id])
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
