@@ -127,40 +127,45 @@ export function InventorySection({ title }) {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0">
-        <div className="flex gap-2">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" placeholder="Buscar productos..." 
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
-            />
+    <div className="h-full flex flex-col lg:flex-row bg-slate-50/50">
+      
+      {/* Left Column: Inventory */}
+      <div className="w-full lg:w-[65%] flex flex-col h-full border-r border-slate-200 bg-slate-50/50">
+        
+        {/* Header (Search, Button & Tabs) */}
+        <div className="p-6 border-b border-slate-200 bg-white shrink-0">
+          <div className="flex flex-wrap gap-3 items-center w-full mb-5">
+            <div className="relative flex-1 sm:flex-none sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="text" placeholder="Buscar productos..." 
+                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+              />
+            </div>
+            <button
+              onClick={() => openModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
+            >
+              <Plus size={18} /> Nuevo Artículo
+            </button>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto custom-scrollbar shrink-0">
+            {['Todas', 'Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
         </div>
-        <button
-          onClick={() => openModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors w-full sm:w-auto justify-center"
-        >
-          <Plus size={18} /> Nuevo Artículo
-        </button>
-      </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar shrink-0">
-        {['Todas', 'Materia Prima', 'Producto Terminado', 'Otros'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-280px)] min-h-[600px]">
-        <div className="w-full lg:w-[60%] flex flex-col h-full overflow-y-auto custom-scrollbar pr-2">
+        {/* Inventory Grid */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           {filteredInventory.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-slate-100 border-dashed text-slate-500 h-64">
               <Package size={48} className="text-slate-300 mb-4" />
@@ -248,10 +253,13 @@ export function InventorySection({ title }) {
             </div>
           )}
         </div>
-        <div className="w-full lg:w-[40%] h-full">
-          <AlchemyTable selectedProduct={selectedCraftProduct} />
-        </div>
       </div>
+
+      {/* Right Column: Alchemy Table */}
+      <div className="w-full lg:w-[35%] h-full bg-white flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-10 relative">
+        <AlchemyTable selectedProduct={selectedCraftProduct} />
+      </div>
+    </div>
 
       <AnimatePresence>
         {isKardexOpen && selectedItem && (() => {

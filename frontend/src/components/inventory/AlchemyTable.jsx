@@ -58,7 +58,7 @@ export default function AlchemyTable({ selectedProduct }) {
 
   if (!selectedProduct) {
     return (
-      <div className="h-full bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+      <div className="h-full bg-slate-50 flex flex-col items-center justify-center p-8 text-center text-slate-400">
         <Beaker size={64} className="mb-4 text-slate-300" strokeWidth={1.5} />
         <h3 className="text-xl font-bold text-slate-500 mb-2">Mesa de Producción</h3>
         <p className="max-w-xs text-sm">Selecciona un Producto Terminado del inventario para ver su receta y fabricarlo.</p>
@@ -70,7 +70,7 @@ export default function AlchemyTable({ selectedProduct }) {
   const isEditing = !hasRecipe || editingRecipe;
 
   return (
-    <div className="h-full bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col overflow-hidden relative">
+    <div className="h-full bg-white flex flex-col relative">
       {/* Header */}
       <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
