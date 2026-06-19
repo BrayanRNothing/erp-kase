@@ -11,7 +11,7 @@ import { BoteSVG, TamborSVG, PinturaSVG, GalonSVG } from './ContainerSVGs';
 const CONTAINER_TYPES = [
   { id: 'Bote', component: BoteSVG },
   { id: 'Tambor', component: TamborSVG },
-  { id: 'Pintura', component: PinturaSVG },
+  { id: 'Cubeta', component: PinturaSVG },
   { id: 'Galón', component: GalonSVG },
 ];
 
@@ -197,16 +197,16 @@ export function InventorySection({ title }) {
             <p>No hay artículos registrados.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-6">
             {filteredInventory.map((item) => {
               const isLowStock = item.stock <= item.minStock;
 
               return (
-                <div key={item.id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative group cursor-pointer" onClick={() => openKardex(item)}>
+                <div key={item.id} className="bg-white rounded-[20px] border border-slate-100 shadow-sm hover:shadow-md transition-all p-3 flex flex-col relative group cursor-pointer" onClick={() => openKardex(item)}>
                   
                   {/* Category Tag & Edit Button */}
-                  <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">
+                  <div className="absolute top-3 left-3 right-3 flex justify-between items-center z-10">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-sm text-slate-500 rounded-md">
                       {item.category}
                     </span>
                     <button 
@@ -214,52 +214,52 @@ export function InventorySection({ title }) {
                       className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
                       title="Editar"
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={12} />
                     </button>
                   </div>
 
-                  {/* Visual SVG - Smaller */}
-                  <div className="w-full h-24 flex items-center justify-center mt-6 mb-3">
-                    <div className="w-16 h-16">
+                  {/* Visual SVG - Protagonist */}
+                  <div className="w-full h-28 flex items-center justify-center mt-5 mb-2">
+                    <div className="w-28 h-28 hover:scale-110 transition-transform duration-300">
                       {renderSVG(item.containerType, item.color)}
                     </div>
                   </div>
 
-                  <div className="text-center mb-3">
-                    <h3 className="font-black text-base text-slate-800 truncate" title={item.name}>{item.name}</h3>
-                    <p className="text-xs text-slate-500">{Number(item.capacity)} {item.unit} • {item.containerType}</p>
-                    {item.location && (
-                      <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-center gap-1">
-                        <MapPin size={10} /> {item.location}
-                      </p>
-                    )}
+                  <div className="text-center mb-2">
+                    <h3 className="font-bold text-sm text-slate-800 truncate" title={item.name}>{item.name}</h3>
                   </div>
 
-                  {/* Quick Controls */}
-                  <div className="mt-auto bg-slate-50 rounded-2xl p-2.5 flex items-center justify-between border border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  {/* Info & Stock Row */}
+                  <div className="mt-auto flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                    
+                    {/* Left: Capacity and Type */}
                     <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Físico</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-xl font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
-                          {item.stock}
-                        </span>
-                        {isLowStock && <AlertCircle size={14} className="text-red-500" title="Stock bajo" />}
-                      </div>
+                      <span className="text-[10px] font-bold text-slate-600">{Number(item.capacity)}{item.unit}</span>
+                      <span className="text-[9px] text-slate-400">{item.containerType}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Right: Stock Controls */}
+                    <div className="flex items-center bg-slate-50 rounded-lg border border-slate-100 p-0.5">
                       <button 
                         onClick={() => handleQuickMovement(item, 'OUT', 1, 'Salida rápida')}
                         disabled={item.stock <= 0}
-                        className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition-colors shadow-sm"
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 transition-all"
                       >
-                        <Minus size={16} />
+                        <Minus size={12} />
                       </button>
+                      
+                      <div className="w-7 flex flex-col items-center justify-center relative">
+                        {isLowStock && <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
+                        <span className={`text-[11px] font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
+                          {item.stock}
+                        </span>
+                      </div>
+
                       <button 
                         onClick={() => handleQuickMovement(item, 'IN', 1, 'Entrada rápida')}
-                        className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm"
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"
                       >
-                        <Plus size={16} />
+                        <Plus size={12} />
                       </button>
                     </div>
                   </div>
@@ -396,11 +396,27 @@ export function InventorySection({ title }) {
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
                   <Package className="text-indigo-600"/>
-                  {editingItem ? 'Editar Artículo' : 'Nuevo Artículo de Inventario'}
+                  {editingItem ? 'Editar Artículo' : 'Nuevo Artículo'}
                 </h3>
-                <button onClick={closeModal} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-xl transition-colors">
-                  <X size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {editingItem && (
+                    <button 
+                      onClick={() => { 
+                        if(window.confirm('¿Estás seguro de que deseas eliminar este artículo permanentemente?')) { 
+                          deleteInventoryItem(editingItem.id); 
+                          closeModal(); 
+                        } 
+                      }} 
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                      title="Eliminar artículo"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                  <button onClick={closeModal} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-xl transition-colors" title="Cerrar">
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
               <div className="p-6 overflow-y-auto custom-scrollbar">
@@ -511,11 +527,9 @@ export function InventorySection({ title }) {
               </div>
 
               <div className="p-6 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-3">
-                {editingItem && (
-                  <button type="button" onClick={() => { deleteInventoryItem(editingItem.id); closeModal(); }} className="px-4 py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-sm font-semibold transition-colors">
-                    Eliminar
-                  </button>
-                )}
+                <button type="button" onClick={closeModal} className="px-4 py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-800 rounded-xl text-sm font-semibold transition-colors">
+                  Cancelar
+                </button>
                 <button type="submit" form="inventory-form" className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
                   {editingItem ? 'Guardar Cambios' : 'Crear Artículo'}
                 </button>
