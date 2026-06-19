@@ -27,19 +27,10 @@ export function LoginScreen() {
         className="w-full max-w-sm bg-white rounded-3xl overflow-hidden"
         style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.10)' }}
       >
-        {/* Top accent — Mexico flag stripe */}
-        <div style={{ height: 3, background: 'linear-gradient(90deg, #006847 33%, #fff 33%, #fff 66%, #CE1126 66%)' }} />
-
         <div className="p-10">
           {/* Logo */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-none">
-                ERP Kase Chemical Mx.
-              </h1>
-              <span className="text-lg leading-none" title="Mexico">🇲🇽</span>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 tracking-widest uppercase">Finance & Operations</p>
+          <div className="mb-8 flex justify-center">
+            <img src="/logokase.png" alt="Kase Logo" className="h-20 w-auto object-contain" />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -728,11 +728,7 @@ router.post('/inventory/:id/movements', async (req, res) => {
       return res.status(404).json({ error: 'Item no encontrado' });
     }
 
-    const newStock = type === 'IN' ? item.stock + parseInt(quantity) : 
-                     type === 'OUT' ? item.stock - parseInt(quantity) : 
-                     parseInt(quantity); // For ADJUST, quantity is the exact new stock
-
-    const diff = type === 'ADJUST' ? newStock - item.stock : parseInt(quantity);
+    const diff = type === 'ADJUST' ? parseInt(quantity) - item.stock : parseInt(quantity);
     const movType = type === 'ADJUST' ? (diff >= 0 ? 'IN' : 'OUT') : type;
     const movQty = Math.abs(diff);
 
@@ -747,10 +743,19 @@ router.post('/inventory/:id/movements', async (req, res) => {
       }
     });
 
+    let updateData = {};
+    if (type === 'IN') {
+      updateData = { stock: { increment: parseInt(quantity) } };
+    } else if (type === 'OUT') {
+      updateData = { stock: { decrement: parseInt(quantity) } };
+    } else if (type === 'ADJUST') {
+      updateData = { stock: parseInt(quantity) };
+    }
+
     // Update item stock
     const updatedItem = await prisma.inventoryItem.update({
       where: { id: item.id },
-      data: { stock: newStock },
+      data: updateData,
       include: { provider: true, movements: { orderBy: { date: 'desc' } }, recipesAsFinal: { include: { rawMaterial: true } } }
     });
 

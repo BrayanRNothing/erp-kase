@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Beaker, Settings, Play, Plus, X, ArrowDown, Droplets, AlertCircle } from 'lucide-react';
+import { Beaker, Settings, Play, Plus, X, ArrowDown, Droplets, AlertCircle, ChevronsDown } from 'lucide-react';
 import { useInventory } from '../../context/InventoryContext';
 import { renderSVG } from './ContainerSVGs';
 
@@ -11,6 +11,8 @@ export default function AlchemyTable({ selectedProduct }) {
   const [newIngredients, setNewIngredients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const rawMaterials = inventory.filter(i => i.category === 'Materia Prima' || i.category === 'Consumible' || i.category === 'Empaque');
 
@@ -37,18 +39,29 @@ export default function AlchemyTable({ selectedProduct }) {
     await saveRecipe(selectedProduct.id, newIngredients);
     setEditingRecipe(false);
     setLoading(false);
+    setSuccessMsg('Receta guardada exitosamente.');
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 2000);
   };
 
   const handleCraft = async () => {
     setLoading(true);
     setErrorMsg('');
+    
+    // Simulate delay for a better UX
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     const res = await craftProduct(selectedProduct.id, craftQuantity);
     if (!res.success) {
       setErrorMsg(res.error || 'Error al fabricar');
+      setLoading(false);
     } else {
       setCraftQuantity(1);
+      setLoading(false);
+      setSuccessMsg('Producto fabricado correctamente.');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 2500);
     }
-    setLoading(false);
   };
 
   const startEditing = () => {
@@ -72,18 +85,18 @@ export default function AlchemyTable({ selectedProduct }) {
   return (
     <div className="h-full bg-white flex flex-col relative">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex justify-between items-center shrink-0">
+      <div className="px-6 py-5 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-            <Beaker size={20} className="text-white" />
+          <div className="w-10 h-10 p-1.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center">
+            {renderSVG(selectedProduct.containerType, selectedProduct.color)}
           </div>
           <div>
-            <h2 className="font-bold text-lg leading-tight">{selectedProduct.name}</h2>
-            <p className="text-indigo-100 text-xs font-medium uppercase tracking-wider">{hasRecipe ? 'Mesa de Fabricación' : 'Creación de Receta'}</p>
+            <h2 className="font-bold text-lg text-slate-800 leading-tight">{selectedProduct.name}</h2>
+            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">{hasRecipe ? 'Mesa de Fabricación' : 'Creación de Receta'}</p>
           </div>
         </div>
         {hasRecipe && !isEditing && (
-          <button onClick={startEditing} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors backdrop-blur-sm" title="Editar Receta">
+          <button onClick={startEditing} className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" title="Editar Receta">
             <Settings size={18} />
           </button>
         )}
@@ -121,7 +134,7 @@ export default function AlchemyTable({ selectedProduct }) {
                     {newIngredients.map((ing, idx) => (
                       <div key={idx} className="flex gap-3 items-center bg-slate-50 p-2 rounded-xl">
                         <select 
-                          className="flex-1 bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                          className="flex-1 bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
                           value={ing.rawMaterialId}
                           onChange={(e) => handleUpdateIngredient(idx, 'rawMaterialId', e.target.value)}
                         >
@@ -131,7 +144,7 @@ export default function AlchemyTable({ selectedProduct }) {
                         </select>
                         <input 
                           type="number" min="0.1" step="0.1"
-                          className="w-24 bg-white border border-slate-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
+                          className="w-24 bg-white border border-slate-200 text-slate-800 text-sm rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-colors"
                           value={ing.quantity}
                           onChange={(e) => handleUpdateIngredient(idx, 'quantity', e.target.value)}
                           placeholder="Cant."
@@ -146,58 +159,105 @@ export default function AlchemyTable({ selectedProduct }) {
               </div>
             </motion.div>
           ) : (
-            <motion.div key="crafting" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center min-h-[300px]">
+            <motion.div key="crafting" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center min-h-[400px] h-full relative">
+              
+              {/* Decorative Background */}
+              <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '24px 24px' }}></div>
               
               {/* Visual Alchemy Tree */}
-              <div className="relative w-full max-w-sm mx-auto">
+              <div className="relative w-full max-w-md mx-auto z-10 flex flex-col items-center">
                 {/* Ingredients Row */}
-                <div className="flex justify-center flex-wrap gap-4 mb-8">
+                <div className="flex justify-center flex-wrap gap-4 mb-4 w-full px-4">
                   {selectedProduct.recipesAsFinal.map((ing, idx) => {
-                    const enoughStock = ing.rawMaterial.stock >= (ing.quantity * craftQuantity);
+                    const latestRM = inventory.find(i => i.id === ing.rawMaterialId) || ing.rawMaterial;
+                    const enoughStock = latestRM.stock >= (ing.quantity * craftQuantity);
+                    const remaining = latestRM.stock - (ing.quantity * craftQuantity);
                     return (
                       <div key={idx} className="flex flex-col items-center group relative">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 bg-white shadow-sm transition-all duration-300 ${enoughStock ? 'border-slate-100 group-hover:border-indigo-300' : 'border-red-200 bg-red-50'}`}>
-                          <div className="w-12 h-12">
-                            {renderSVG(ing.rawMaterial.containerType, ing.rawMaterial.color)}
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 bg-white shadow-sm transition-all duration-300 relative ${enoughStock ? 'border-slate-100 group-hover:border-indigo-300 group-hover:shadow-md' : 'border-red-200 bg-red-50'}`}>
+                          {!enoughStock && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">Falta</div>}
+                          <div className="w-10 h-10">
+                            {renderSVG(latestRM.containerType, latestRM.color)}
                           </div>
                         </div>
-                        <div className="mt-2 text-center">
-                          <p className="text-[10px] font-bold text-slate-600 max-w-[80px] truncate">{ing.rawMaterial.name}</p>
-                          <p className={`text-[10px] font-bold ${enoughStock ? 'text-indigo-600' : 'text-red-600'}`}>
-                            {ing.quantity * craftQuantity} {ing.rawMaterial.unit}
-                          </p>
+                        <div className="mt-2 text-center bg-white/90 backdrop-blur-sm px-3 py-2 rounded-xl border border-slate-100 shadow-sm w-36">
+                          <p className="text-[11px] font-bold text-slate-700 truncate mb-1">{latestRM.name}</p>
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-slate-400 font-medium">Requiere:</span>
+                              <span className={`font-black ${enoughStock ? 'text-indigo-600' : 'text-red-600'}`}>
+                                {ing.quantity * craftQuantity} {latestRM.unit}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-slate-400 font-medium">Stock:</span>
+                              <span className="font-bold text-slate-600">
+                                {latestRM.stock} {latestRM.unit}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] pt-1 border-t border-slate-100/60">
+                              <span className="text-slate-400 font-medium">Quedará:</span>
+                              <span className={`font-bold ${enoughStock ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {remaining} {latestRM.unit}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Arrow down */}
-                <div className="flex justify-center mb-8 relative">
+                {/* Arrow down / Mixer */}
+                <div className="flex justify-center mb-4 relative w-full h-8">
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-px h-full bg-indigo-200 absolute top-0 bottom-0" />
+                    <div className={`w-0.5 h-full transition-colors duration-500 absolute top-0 bottom-0 ${loading ? 'bg-indigo-400 animate-pulse' : 'bg-slate-200'}`} />
                   </div>
-                  <div className="bg-slate-50 relative z-10 p-2 rounded-full">
-                    <ArrowDown size={20} className="text-indigo-400" strokeWidth={3} />
+                  <div className={`relative z-10 rounded-full p-2 border transition-all duration-500 shadow-sm flex items-center justify-center ${loading ? 'bg-indigo-50 border-indigo-200 scale-110' : 'bg-white border-slate-100'}`}>
+                    <ChevronsDown size={20} className={`${loading ? 'text-indigo-500 animate-bounce' : 'text-slate-300'}`} strokeWidth={2.5} />
                   </div>
                 </div>
 
                 {/* Result Product */}
                 <div className="flex justify-center">
-                  <div className="relative group cursor-pointer">
-                    <div className="absolute inset-0 bg-indigo-500 opacity-0 group-hover:opacity-20 blur-xl rounded-full transition-opacity duration-500" />
-                    <div className="w-32 h-32 relative z-10 hover:scale-110 transition-transform duration-500 drop-shadow-xl">
+                  <div className={`relative group cursor-pointer transition-all duration-500 ${loading ? 'scale-105 filter brightness-110' : ''}`}>
+                    <div className={`absolute inset-0 bg-indigo-500 rounded-full transition-all duration-500 ${loading ? 'opacity-40 blur-2xl animate-pulse' : 'opacity-0 group-hover:opacity-10 blur-xl'}`} />
+                    <div className="w-32 h-32 relative z-10 hover:scale-105 transition-transform duration-500 drop-shadow-2xl">
                       {renderSVG(selectedProduct.containerType, selectedProduct.color)}
                     </div>
-                    <div className="absolute -bottom-6 left-0 right-0 text-center">
-                      <span className="inline-block bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        +{craftQuantity} {selectedProduct.unit}
-                      </span>
+                    <div className="absolute -bottom-6 left-0 right-0 flex justify-center">
+                      <div className="bg-white border border-slate-100 text-slate-800 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2">
+                        <span>Generará:</span>
+                        <span className="text-indigo-600 font-black text-sm">+{craftQuantity} {selectedProduct.unit}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Success Modal Overlay */}
+        <AnimatePresence>
+          {showSuccessModal && (
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl"
+            >
+              <motion.div 
+                initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: -20 }}
+                className="bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex flex-col items-center text-center max-w-[200px]"
+              >
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring' }}>
+                    <ArrowDown size={32} className="text-emerald-500 rotate-180" />
+                  </motion.div>
+                </div>
+                <h3 className="text-lg font-black text-slate-800 mb-1">¡Éxito!</h3>
+                <p className="text-xs text-slate-500 font-medium">{successMsg}</p>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -233,10 +293,15 @@ export default function AlchemyTable({ selectedProduct }) {
             </div>
             <button 
               onClick={handleCraft}
-              disabled={loading}
-              className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl text-sm hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center justify-center gap-2 group"
+              disabled={loading || showSuccessModal}
+              className={`flex-1 py-3 font-bold rounded-xl text-sm transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 group ${loading ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'}`}
             >
-              {loading ? 'Fabricando...' : (
+              {loading ? (
+                <>
+                  <Settings size={18} className="animate-spin" />
+                  Fabricando...
+                </>
+              ) : (
                 <>
                   <Play size={16} className="fill-white group-hover:scale-110 transition-transform" />
                   FABRICAR

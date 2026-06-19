@@ -15,6 +15,11 @@ export const ACTIVITY_TYPES = {
   BUDGET_ADDED:     'budget_added',
   BUDGET_DELETED:   'budget_deleted',
   TRANSFER:         'transfer',
+  INVENTORY_ADDED:  'inventory_added',
+  INVENTORY_DELETED:'inventory_deleted',
+  INVENTORY_ADJUSTED:'inventory_adjusted',
+  INVENTORY_MOVEMENT:'inventory_movement',
+  PRODUCT_CRAFTED:  'product_crafted',
 };
 
 export function ActivityProvider({ children }) {

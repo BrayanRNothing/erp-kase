@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { BoteSVG, TamborSVG, PinturaSVG, GalonSVG, renderSVG } from './ContainerSVGs';
 import AlchemyTable from './AlchemyTable';
+import KardexPanel from './KardexPanel';
 
 const CONTAINER_TYPES = [
   { id: 'Bote', component: BoteSVG },
@@ -31,9 +32,22 @@ export function InventorySection({ title }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
-  const [isKardexOpen, setIsKardexOpen] = useState(false);
+  const [rightPanelType, setRightPanelType] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedCraftProduct, setSelectedCraftProduct] = useState(null);
+  const [alchemyTab, setAlchemyTab] = useState('fabricar');
+
+  // Keep selected items synced with inventory updates
+  React.useEffect(() => {
+    if (selectedItem) {
+      const updated = inventory.find(i => i.id === selectedItem.id);
+      if (updated) setSelectedItem(updated);
+    }
+    if (selectedCraftProduct) {
+      const updated = inventory.find(i => i.id === selectedCraftProduct.id);
+      if (updated) setSelectedCraftProduct(updated);
+    }
+  }, [inventory]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -89,7 +103,7 @@ export function InventorySection({ title }) {
         stock: 0,
         minStock: 0,
         providerId: '',
-        category: 'Materia Prima',
+        category: activeTab === 'Otros' ? 'Empaque' : activeTab,
         color: '#3B82F6',
         location: '',
         unitCost: ''
@@ -119,7 +133,7 @@ export function InventorySection({ title }) {
   const openKardex = (item) => {
     const updatedItem = inventory.find(i => i.id === item.id) || item;
     setSelectedItem(updatedItem);
-    setIsKardexOpen(true);
+    setRightPanelType('kardex');
   };
 
   const handleQuickMovement = async (item, type, qty, reason) => {
@@ -128,27 +142,27 @@ export function InventorySection({ title }) {
 
   return (
     <>
-    <div className="h-full flex flex-col lg:flex-row bg-slate-50/50">
+    <div className="absolute inset-0 flex flex-col lg:flex-row bg-slate-50/50 overflow-hidden">
       
       {/* Left Column: Inventory */}
       <div className="w-full lg:w-[65%] flex flex-col h-full border-r border-slate-200 bg-slate-50/50">
         
         {/* Header (Search, Button & Tabs) */}
-        <div className="p-6 border-b border-slate-200 bg-white shrink-0">
+        <div className="p-6 bg-white shrink-0">
           <div className="flex flex-wrap gap-3 items-center w-full mb-5">
-            <div className="relative flex-1 sm:flex-none sm:w-64">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
                 type="text" placeholder="Buscar productos..." 
                 value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
               />
             </div>
             <button
               onClick={() => openModal()}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm whitespace-nowrap"
             >
-              <Plus size={18} /> Nuevo Artículo
+              <Plus size={18} /> Nuevo {activeTab === 'Materia Prima' ? 'Material' : activeTab === 'Producto Terminado' ? 'Producto' : 'Artículo'}
             </button>
           </div>
 
@@ -176,13 +190,16 @@ export function InventorySection({ title }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
               {filteredInventory.map((item) => {
                 const isLowStock = item.stock <= item.minStock;
+                const isSelected = (rightPanelType === 'alchemy' && selectedCraftProduct?.id === item.id) || (rightPanelType === 'kardex' && selectedItem?.id === item.id);
                 return (
                   <div 
                     key={item.id} 
-                    className={`bg-white rounded-[20px] border shadow-sm hover:shadow-md transition-all p-3 flex flex-col relative group cursor-pointer ${selectedCraftProduct?.id === item.id ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100'}`} 
+                    className={`bg-white rounded-[20px] border shadow-sm hover:shadow-md transition-all p-3 flex flex-col relative group cursor-pointer ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100'}`} 
                     onClick={() => {
                       if (item.category === 'Producto Terminado') {
                         setSelectedCraftProduct(item);
+                        setRightPanelType('alchemy');
+                        setAlchemyTab('fabricar');
                       } else {
                         openKardex(item);
                       }
@@ -193,15 +210,6 @@ export function InventorySection({ title }) {
                         {item.category}
                       </span>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {item.category === 'Producto Terminado' && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openKardex(item); }} 
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
-                            title="Historial Kardex"
-                          >
-                            <History size={12} />
-                          </button>
-                        )}
                         <button 
                           onClick={(e) => { e.stopPropagation(); openModal(item); }} 
                           className="p-1.5 text-slate-400 hover:text-indigo-600 bg-white hover:bg-slate-50 rounded-lg shadow-sm border border-slate-100 transition-colors"
@@ -222,32 +230,42 @@ export function InventorySection({ title }) {
                       <h3 className="font-bold text-sm text-slate-800 truncate" title={item.name}>{item.name}</h3>
                     </div>
 
-                    <div className="mt-auto flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-slate-600">{Number(item.capacity)}{item.unit}</span>
-                      </div>
-                      <div className="flex items-center bg-slate-50 rounded-lg border border-slate-100 p-0.5">
-                        <button 
-                          onClick={() => handleQuickMovement(item, 'OUT', 1, 'Salida rápida')}
-                          disabled={item.stock <= 0}
-                          className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 transition-all"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <div className="w-7 flex flex-col items-center justify-center relative">
-                          {isLowStock && <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
-                          <span className={`text-[11px] font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
-                            {item.stock}
-                          </span>
+                      <div className="mt-auto flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-slate-600">{Number(item.capacity)}{item.unit}</span>
                         </div>
-                        <button 
-                          onClick={() => handleQuickMovement(item, 'IN', 1, 'Entrada rápida')}
-                          className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"
-                        >
-                          <Plus size={12} />
-                        </button>
+                        {item.category !== 'Producto Terminado' ? (
+                          <div className="flex items-center bg-slate-50 rounded-lg border border-slate-100 p-0.5">
+                            <button 
+                              onClick={() => handleQuickMovement(item, 'OUT', 1, 'Salida rápida')}
+                              disabled={item.stock <= 0}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm disabled:opacity-50 transition-all"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <div className="w-7 flex flex-col items-center justify-center relative">
+                              {isLowStock && <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
+                              <span className={`text-[11px] font-black ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
+                                {item.stock}
+                              </span>
+                            </div>
+                            <button 
+                              onClick={() => handleQuickMovement(item, 'IN', 1, 'Entrada rápida')}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-end justify-center relative">
+                            {isLowStock && <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" title="Stock Bajo"></span>}
+                            <span className="text-[9px] text-slate-400 font-bold uppercase">Stock</span>
+                            <span className={`text-[12px] font-black leading-none ${isLowStock ? 'text-red-600' : 'text-slate-800'}`}>
+                              {item.stock}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </div>
                   </div>
                 );
               })}
@@ -256,118 +274,45 @@ export function InventorySection({ title }) {
         </div>
       </div>
 
-      {/* Right Column: Alchemy Table */}
-      <div className="w-full lg:w-[35%] h-full bg-white flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)] z-10 relative">
-        <AlchemyTable selectedProduct={selectedCraftProduct} />
+      {/* Right Column: Dynamic Panel */}
+      <div className="w-full lg:w-[35%] h-full bg-white flex flex-col border-l border-slate-200 z-10 relative">
+        {rightPanelType === 'kardex' ? (
+          <KardexPanel item={selectedItem} onClose={() => setRightPanelType(null)} onMovement={handleQuickMovement} />
+        ) : rightPanelType === 'alchemy' ? (
+          <div className="flex flex-col h-full">
+             {/* Tabs Header */}
+             <div className="flex bg-slate-50 border-b border-slate-200 shrink-0">
+               <button 
+                 onClick={() => setAlchemyTab('fabricar')} 
+                 className={`flex-1 py-3.5 text-sm font-bold transition-colors ${alchemyTab === 'fabricar' ? 'border-b-2 border-indigo-600 text-indigo-600 bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 border-b-2 border-transparent'}`}
+               >
+                 Fabricar Receta
+               </button>
+               <button 
+                 onClick={() => setAlchemyTab('detalles')} 
+                 className={`flex-1 py-3.5 text-sm font-bold transition-colors ${alchemyTab === 'detalles' ? 'border-b-2 border-indigo-600 text-indigo-600 bg-white' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 border-b-2 border-transparent'}`}
+               >
+                 Detalles y Kardex
+               </button>
+             </div>
+             {/* Content */}
+             <div className="flex-1 overflow-hidden relative">
+               {alchemyTab === 'fabricar' ? (
+                 <AlchemyTable selectedProduct={selectedCraftProduct} />
+               ) : (
+                 <KardexPanel item={selectedCraftProduct} onClose={null} onMovement={handleQuickMovement} />
+               )}
+             </div>
+          </div>
+        ) : (
+          <div className="h-full bg-slate-50 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+            <Box size={64} className="mb-4 text-slate-300" strokeWidth={1.5} />
+            <h3 className="text-xl font-bold text-slate-500 mb-2">Panel de Detalles</h3>
+            <p className="max-w-xs text-sm">Selecciona un producto para ver sus detalles o fabricarlo.</p>
+          </div>
+        )}
       </div>
     </div>
-
-      <AnimatePresence>
-        {isKardexOpen && selectedItem && (() => {
-          // ensure we have the most up to date item from context
-          const currentItem = inventory.find(i => i.id === selectedItem.id) || selectedItem;
-          
-          return (
-          <div className="fixed inset-0 z-40 flex justify-end">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
-              onClick={() => setIsKardexOpen(false)}
-            />
-            <motion.div 
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-full max-w-md bg-white h-full shadow-2xl relative z-50 flex flex-col"
-            >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10">
-                    {renderSVG(currentItem.containerType, currentItem.color)}
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-lg text-slate-800">{currentItem.name}</h2>
-                    <p className="text-xs text-slate-500">{currentItem.category}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setIsKardexOpen(false)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Stock Actual</p>
-                    <p className="text-3xl font-black text-slate-800">{currentItem.stock} <span className="text-sm font-medium text-slate-400">/ {currentItem.capacity}{currentItem.unit}</span></p>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total</p>
-                    <p className="text-3xl font-black text-indigo-600">${(Number(currentItem.unitCost) * currentItem.stock).toLocaleString('es-MX')}</p>
-                  </div>
-                </div>
-
-                {/* Kardex List */}
-                <div>
-                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <History size={18} className="text-slate-400"/> Historial de Movimientos
-                  </h3>
-                  
-                  {(!currentItem.movements || currentItem.movements.length === 0) ? (
-                    <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-xl">No hay movimientos registrados.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {currentItem.movements.map((mov) => (
-                        <div key={mov.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">{mov.reason}</p>
-                            <p className="text-xs text-slate-400">{new Date(mov.date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
-                          </div>
-                          <div className={`px-3 py-1 rounded-lg text-sm font-bold ${mov.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                            {mov.type === 'IN' ? '+' : '-'}{mov.quantity}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Add Movement Action */}
-              <div className="p-6 border-t border-slate-100 bg-slate-50 shrink-0">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Registrar Movimiento Manual</p>
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const qty = parseInt(e.target.qty.value);
-                    const reason = e.target.reason.value;
-                    const type = e.nativeEvent.submitter.value; // 'IN' or 'OUT'
-                    handleQuickMovement(currentItem, type, qty, reason);
-                    e.target.reset();
-                  }}
-                  className="flex flex-col gap-3"
-                >
-                  <div className="flex gap-2">
-                    <input name="qty" required type="number" min="1" placeholder="Cant." className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
-                    <input name="reason" required type="text" placeholder="Motivo (ej. Venta, Merma)" className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="submit" value="IN" className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-colors">
-                      Entrada (+)
-                    </button>
-                    <button type="submit" value="OUT" className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-colors">
-                      Salida (-)
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-          );
-        })()}
-      </AnimatePresence>
 
       {/* CREATE/EDIT MODAL */}
       <AnimatePresence>

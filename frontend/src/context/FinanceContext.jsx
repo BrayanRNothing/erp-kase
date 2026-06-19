@@ -88,7 +88,7 @@ export function FinanceProvider({ children }) {
     try {
       const newCard = await apiCall('/cards', { method: 'POST', body: JSON.stringify(card) });
       setCards(prev => [newCard, ...prev]);
-      logActivity({ type: ACTIVITY_TYPES.CARD_ADDED, title: 'Card added', description: `${card.name}` });
+      logActivity({ type: ACTIVITY_TYPES.CARD_ADDED, title: 'Card added', description: `${card.bank || card.name || 'New Card'}` });
     } catch (e) { console.error(e); }
   };
   const deleteCard = async (id) => {
@@ -96,7 +96,7 @@ export function FinanceProvider({ children }) {
       await apiCall(`/cards/${id}`, { method: 'DELETE' });
       const card = cards.find(c => c.id === id);
       setCards(cards.filter(c => c.id !== id));
-      if (card) logActivity({ type: ACTIVITY_TYPES.CARD_DELETED, title: 'Card deleted', description: `${card.name}` });
+      if (card) logActivity({ type: ACTIVITY_TYPES.CARD_DELETED, title: 'Card deleted', description: `${card.bank || card.name || 'Card'}` });
     } catch (e) { console.error(e); }
   };
   const toggleCardStatus = async (id) => {
@@ -125,7 +125,7 @@ export function FinanceProvider({ children }) {
       logActivity({
         type: ACTIVITY_TYPES.MOVEMENT_ADDED,
         title: movement.type === 'income' || movement.type === 'INCOME' ? 'Income recorded' : 'Expense recorded',
-        description: `${movement.description || movement.category} — $${Number(movement.amount).toFixed(2)} (${card?.name ?? '?'})`
+        description: `${movement.description || movement.category} — $${Number(movement.amount).toFixed(2)} (${card?.bank || card?.name || '?'})`
       });
       return { success: true };
     } catch (e) { console.error(e); return { success: false, error: e.message }; }
@@ -138,7 +138,7 @@ export function FinanceProvider({ children }) {
     
     const src = cards.find(c => c.id === sourceId);
     const tgt = cards.find(c => c.id === targetId);
-    logActivity({ type: ACTIVITY_TYPES.TRANSFER, title: 'Transfer completed', description: `$${Number(amount).toFixed(2)} from ${src?.name ?? '?'} to ${tgt?.name ?? '?'}` });
+    logActivity({ type: ACTIVITY_TYPES.TRANSFER, title: 'Transfer completed', description: `$${Number(amount).toFixed(2)} from ${src?.bank || src?.name || '?'} to ${tgt?.bank || tgt?.name || '?'}` });
     return { success: true };
   };
 

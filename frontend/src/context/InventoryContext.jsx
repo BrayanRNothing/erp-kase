@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { useActivity, ACTIVITY_TYPES } from './ActivityContext';
 import { io } from 'socket.io-client';
 
 const InventoryContext = createContext(null);
@@ -7,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export function InventoryProvider({ children }) {
   const { token, user } = useAuth();
+  const { logActivity } = useActivity();
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,21 +60,24 @@ export function InventoryProvider({ children }) {
   const addInventoryItem = async (item) => {
     try {
       const newItem = await apiCall('/inventory', { method: 'POST', body: JSON.stringify(item) });
-      setInventory([newItem, ...inventory]);
+      setInventory(prev => [newItem, ...prev]);
+      logActivity({ type: ACTIVITY_TYPES.INVENTORY_ADDED, title: 'Item added to inventory', description: item.name });
     } catch (e) { console.error(e); }
   };
 
   const updateInventoryItem = async (id, updates) => {
     try {
       const updated = await apiCall(`/inventory/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
-      setInventory(inventory.map(item => item.id === id ? updated : item));
+      setInventory(prev => prev.map(item => item.id === id ? updated : item));
     } catch (e) { console.error(e); }
   };
 
   const deleteInventoryItem = async (id) => {
     try {
+      const item = inventory.find(i => i.id === id);
       await apiCall(`/inventory/${id}`, { method: 'DELETE' });
-      setInventory(inventory.filter(item => item.id !== id));
+      setInventory(prev => prev.filter(i => i.id !== id));
+      if (item) logActivity({ type: ACTIVITY_TYPES.INVENTORY_DELETED, title: 'Item deleted', description: item.name });
     } catch (e) { console.error(e); }
   };
 
@@ -83,7 +88,8 @@ export function InventoryProvider({ children }) {
         method: 'POST', 
         body: JSON.stringify({ type: 'ADJUST', quantity: newStock, reason }) 
       });
-      setInventory(inventory.map(item => item.id === id ? updated : item));
+      setInventory(prev => prev.map(item => item.id === id ? updated : item));
+      logActivity({ type: ACTIVITY_TYPES.INVENTORY_ADJUSTED, title: 'Stock adjusted', description: `${updated.name}: ${newStock} (${reason})` });
     } catch (e) { console.error(e); }
   };
 
@@ -94,7 +100,8 @@ export function InventoryProvider({ children }) {
         method: 'POST', 
         body: JSON.stringify({ type, quantity, reason }) 
       });
-      setInventory(inventory.map(item => item.id === id ? updated : item));
+      setInventory(prev => prev.map(item => item.id === id ? updated : item));
+      logActivity({ type: ACTIVITY_TYPES.INVENTORY_MOVEMENT, title: 'Inventory movement', description: `${type} of ${quantity} for ${updated.name}` });
     } catch (e) { console.error(e); }
   };
 
@@ -104,7 +111,7 @@ export function InventoryProvider({ children }) {
         method: 'POST',
         body: JSON.stringify({ ingredients })
       });
-      setInventory(inventory.map(item => item.id === finalProductId ? updated : item));
+      setInventory(prev => prev.map(item => item.id === finalProductId ? updated : item));
     } catch (e) { console.error(e); }
   };
 
@@ -114,8 +121,10 @@ export function InventoryProvider({ children }) {
         method: 'POST',
         body: JSON.stringify({ craftQuantity })
       });
-      // It emits 'updateData' inside api.js middleware on success, 
-      // which will trigger fetchInventory(), syncing raw materials and final products automatically.
+      // Emits 'updateData' via socket, but we also manually fetch to be 100% sure the UI updates instantly
+      fetchInventory();
+      const product = inventory.find(i => i.id === finalProductId);
+      logActivity({ type: ACTIVITY_TYPES.PRODUCT_CRAFTED, title: 'Product crafted', description: `${product?.name || 'Product'} x${craftQuantity}` });
       return { success: true };
     } catch (e) { 
       console.error(e); 
