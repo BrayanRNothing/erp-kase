@@ -78,3 +78,18 @@ export const GalonSVG = ({ color = "#3B82F6", className = "" }) => (
     <rect x="35" y="75" width="30" height="3" rx="1" fill="black" fillOpacity="0.1"/>
   </svg>
 );
+
+export const renderSVG = (type, color) => {
+  const CONTAINER_TYPES = [
+    { id: 'Bote', component: BoteSVG },
+    { id: 'Tina', component: BoteSVG },
+    { id: 'Tambor', component: TamborSVG },
+    { id: 'Cubeta', component: PinturaSVG },
+    { id: 'Galón', component: GalonSVG },
+    { id: 'Botella', component: GalonSVG }
+  ];
+  
+  const found = CONTAINER_TYPES.find(c => c.id === type);
+  const SvgComponent = found ? found.component : BoteSVG;
+  return <SvgComponent color={color} className="w-full h-full drop-shadow-md" />;
+};

@@ -254,11 +254,85 @@ export function InventorySection({ title }) {
       </div>
 
       <AnimatePresence>
-        {isKardexOpen && selectedItem && (
+        {isKardexOpen && selectedItem && (() => {
+          // ensure we have the most up to date item from context
+          const currentItem = inventory.find(i => i.id === selectedItem.id) || selectedItem;
+          
+          return (
           <div className="fixed inset-0 z-40 flex justify-end">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsKardexOpen(false)} />
-            <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="w-full max-w-md bg-white h-full shadow-2xl relative z-50 flex flex-col">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
+              onClick={() => setIsKardexOpen(false)}
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="w-full max-w-md bg-white h-full shadow-2xl relative z-50 flex flex-col"
+            >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10">
+                    {renderSVG(currentItem.containerType, currentItem.color)}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg text-slate-800">{currentItem.name}</h2>
+                    <p className="text-xs text-slate-500">{currentItem.category}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setIsKardexOpen(false)} className="p-2 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Stock Actual</p>
+                    <p className="text-3xl font-black text-slate-800">{currentItem.stock} <span className="text-sm font-medium text-slate-400">/ {currentItem.capacity}{currentItem.unit}</span></p>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total</p>
+                    <p className="text-3xl font-black text-indigo-600">${(Number(currentItem.unitCost) * currentItem.stock).toLocaleString('es-MX')}</p>
+                  </div>
+                </div>
+
+                {/* Kardex List */}
+                <div>
+                  <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <History size={18} className="text-slate-400"/> Historial de Movimientos
+                  </h3>
+                  
+                  {(!currentItem.movements || currentItem.movements.length === 0) ? (
+                    <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-xl">No hay movimientos registrados.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {currentItem.movements.map((mov) => (
+                        <div key={mov.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-white shadow-sm">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">{mov.reason}</p>
+                            <p className="text-xs text-slate-400">{new Date(mov.date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg text-sm font-bold ${mov.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            {mov.type === 'IN' ? '+' : '-'}{mov.quantity}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Add Movement Action */}
+              <div className="p-6 border-t border-slate-100 bg-slate-50 shrink-0">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Registrar Movimiento Manual</p>
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const qty = parseInt(e.target.qty.value);
                     const reason = e.target.reason.value;
                     const type = e.nativeEvent.submitter.value; // 'IN' or 'OUT'
                     handleQuickMovement(currentItem, type, qty, reason);
