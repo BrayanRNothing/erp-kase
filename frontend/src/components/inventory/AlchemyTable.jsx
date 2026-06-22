@@ -262,7 +262,7 @@ export default function AlchemyTable({ selectedProduct }) {
             >
               <motion.div
                 initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: -20 }}
-                className="bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex flex-col items-center text-center max-w-[200px]"
+                className="bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex flex-col items-center text-center max-w-[200px] max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring' }}>

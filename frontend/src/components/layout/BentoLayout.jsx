@@ -47,14 +47,18 @@ function Card({ children, className = '', style = {}, id }) {
   return (
     <div
       id={id}
-      className={`relative overflow-hidden rounded-2xl bg-white ${className}`}
+      className={`relative overflow-hidden rounded-[2rem] bg-indigo-50/60 backdrop-blur-2xl border-2 border-white ${className}`}
       style={{
-        boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-        border: '1px solid rgba(0,0,0,0.06)',
+        boxShadow: 'inset 0 4px 0 rgba(255,255,255,0.8), inset 0 -4px 0 rgba(0,0,0,0.02), 0 8px 24px rgba(0,0,0,0.04)',
         ...style
       }}
     >
-      {children}
+      {/* Toon Reflections */}
+      <div className="absolute top-2 right-4 w-10 h-2 bg-white rounded-full opacity-90 rotate-[-15deg] pointer-events-none z-0" />
+      <div className="absolute top-6 right-2 w-2 h-2 bg-white rounded-full opacity-90 pointer-events-none z-0" />
+      <div className="relative z-10 h-full w-full">
+        {children}
+      </div>
     </div>
   );
 }
@@ -209,7 +213,7 @@ export function BentoLayout() {
         {/* Perfil */}
         <Card className="p-5 shrink-0" id="tour-profile">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-bold text-base shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white font-bold text-base shrink-0 shadow-[inset_0_2px_0_rgba(255,255,255,0.4),_0_4px_8px_rgba(0,0,0,0.1)]">
               {avatar}
             </div>
             <div className="min-w-0 flex-1">
@@ -218,14 +222,14 @@ export function BentoLayout() {
             </div>
             <button
               onClick={() => setSelectedId('settings')}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+              className="p-2 rounded-xl hover:bg-indigo-100 text-slate-400 hover:text-indigo-600 transition-colors shrink-0"
               title={t.sections.settings}
             >
               <Settings size={16} />
             </button>
             <button
               onClick={logout}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+              className="p-2 rounded-xl hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors shrink-0"
               title={t.sidebar.logout}
             >
               <LogOut size={16} />
@@ -236,19 +240,20 @@ export function BentoLayout() {
         {/* Balance rápido */}
         <Card className="p-5 shrink-0" id="tour-balance">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-5 rounded bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500 relative overflow-hidden shadow-sm">
-              <div className="absolute top-1/2 left-0 w-full h-px bg-black/15" />
-              <div className="absolute top-0 left-1/2 w-px h-full bg-black/15" />
+            <div className="w-8 h-5 rounded-md bg-gradient-to-br from-indigo-300 via-indigo-400 to-indigo-500 relative overflow-hidden shadow-[inset_0_2px_0_rgba(255,255,255,0.4),_inset_0_-2px_0_rgba(0,0,0,0.1)]">
+              <div className="absolute top-1/2 left-0 w-full h-px bg-white/20" />
+              <div className="absolute top-0 left-1/2 w-px h-full bg-white/20" />
+              <div className="absolute top-0.5 left-1 w-3 h-0.5 bg-white rounded-full opacity-60" />
             </div>
-            <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-widest">{t.sidebar.totalAccumulated}</span>
+            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{t.sidebar.totalAccumulated}</span>
           </div>
           <div>
-            <p className="text-slate-900 text-3xl font-bold tracking-tight">
+            <p className="text-slate-800 text-3xl font-black tracking-tight drop-shadow-sm">
               ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
             <div className="flex justify-between items-end mt-2">
-              <p className="text-slate-400 text-[10px] uppercase tracking-wider">{cards?.length || 0} {t.sidebar.linkedAccounts}</p>
-              <Wallet size={16} className="text-slate-300" />
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{cards?.length || 0} {t.sidebar.linkedAccounts}</p>
+              <Wallet size={18} className="text-slate-300" strokeWidth={2.5} />
             </div>
           </div>
         </Card>
@@ -256,11 +261,11 @@ export function BentoLayout() {
         {/* Actividad Reciente */}
         <Card className="flex-1 p-5 flex flex-col min-h-0" id="tour-activity">
           <div className="flex items-center justify-between mb-3 shrink-0">
-            <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-              <TrendingUp size={13} className="text-emerald-500" /> Recent Activity
+            <span className="text-xs font-bold text-slate-500 flex items-center gap-2">
+              <TrendingUp size={14} strokeWidth={3} className="text-indigo-500 drop-shadow-sm" /> Recent Activity
             </span>
             {activities.length > 0 && (
-              <span className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-px rounded-full">
+              <span className="text-xs bg-indigo-100 text-indigo-700 border-2 border-white shadow-[inset_0_2px_0_rgba(255,255,255,0.8)] px-2 py-0.5 rounded-full font-black">
                 {activities.length}
               </span>
             )}
@@ -341,23 +346,27 @@ export function BentoLayout() {
                           setSelectedId(section.id);
                         }
                       }}
-                      className={`relative overflow-hidden flex flex-col items-center justify-center gap-3 rounded-3xl cursor-pointer bg-white group transition-colors duration-200 hover:bg-slate-50 ${theme.border}`}
+                      className={`relative overflow-hidden flex flex-col items-center justify-center gap-3 rounded-[2.5rem] cursor-pointer bg-indigo-50/60 backdrop-blur-2xl group transition-all duration-300 hover:bg-indigo-100/80 border-4 border-white hover:border-indigo-300`}
                       style={{
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                        border: '1px solid rgba(0,0,0,0.05)',
+                        boxShadow: 'inset 0 6px 0 rgba(255,255,255,0.8), inset 0 -6px 0 rgba(0,0,0,0.02), 0 12px 24px rgba(0,0,0,0.04)',
                       }}
                       whileHover={{
-                        scale: 1.02,
-                        y: -3,
-                        boxShadow: '0 12px 24px rgba(0,0,0,0.06)',
+                        scale: 1.03,
+                        y: -5,
+                        boxShadow: 'inset 0 6px 0 rgba(255,255,255,1), inset 0 -6px 0 rgba(0,0,0,0.03), 0 20px 40px rgba(0,0,0,0.08)',
                       }}
-                      whileTap={{ scale: 0.98 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <motion.div layoutId={`icon-${section.id}`} className={`text-slate-400 transition-colors duration-200 ${theme.text}`}>
-                        <Icon className="w-7 h-7 lg:w-8 lg:h-8" strokeWidth={1.5} />
+                      {/* Toon Reflections */}
+                      <div className="absolute top-4 right-5 w-12 h-3 bg-white rounded-full opacity-90 rotate-[-15deg] pointer-events-none" />
+                      <div className="absolute top-9 right-3 w-3 h-3 bg-white rounded-full opacity-90 pointer-events-none" />
+                      <div className="absolute top-3 left-6 w-16 h-1.5 bg-white rounded-full opacity-50 pointer-events-none" />
+
+                      <motion.div layoutId={`icon-${section.id}`} className={`text-slate-400 transition-colors duration-200 group-hover:text-indigo-500 relative z-10`}>
+                        <Icon className="w-7 h-7 lg:w-8 lg:h-8 drop-shadow-[0_2px_2px_rgba(0,0,0,0.1)]" strokeWidth={2.5} />
                       </motion.div>
 
-                      <motion.span layoutId={`title-${section.id}`} className={`text-xs lg:text-sm font-semibold text-slate-500 transition-colors duration-200 text-center px-2 ${theme.text}`}>
+                      <motion.span layoutId={`title-${section.id}`} className={`text-xs lg:text-sm font-bold text-slate-500 transition-colors duration-200 text-center px-2 group-hover:text-indigo-500 relative z-10`}>
                         {section.title}
                       </motion.span>
                     </motion.button>
@@ -372,28 +381,32 @@ export function BentoLayout() {
             <motion.div
               key="expanded-view"
               layoutId={`card-${selected.id}`}
-              className="absolute inset-0 flex flex-col overflow-hidden rounded-[2rem] z-10 bg-white"
+              className="absolute inset-0 flex flex-col overflow-hidden rounded-[2.5rem] z-10 bg-indigo-50/90 backdrop-blur-3xl border-4 border-white"
               style={{
-                boxShadow: '0 8px 48px rgba(0,0,0,0.12)',
-                border: '1px solid rgba(0,0,0,0.06)',
+                boxShadow: 'inset 0 8px 0 rgba(255,255,255,0.9), inset 0 -8px 0 rgba(0,0,0,0.02), 0 24px 48px rgba(0,0,0,0.08)',
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
+              {/* Toon Reflections */}
+              <div className="absolute top-5 right-12 w-24 h-4 bg-white rounded-full opacity-90 rotate-[-10deg] pointer-events-none z-20" />
+              <div className="absolute top-14 right-8 w-4 h-4 bg-white rounded-full opacity-90 pointer-events-none z-20" />
+
               {/* Header Expandido */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center justify-between px-6 py-5 border-b-2 border-slate-100 shrink-0 relative z-10 bg-white/50 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                  <motion.div layoutId={`icon-${selected.id}`} className="text-slate-500">
-                    {React.createElement(selected.icon, { size: 26, strokeWidth: 1.5 })}
+                  <motion.div layoutId={`icon-${selected.id}`} className="text-indigo-500 bg-indigo-50 p-2.5 rounded-2xl border-2 border-white shadow-[inset_0_2px_0_rgba(255,255,255,0.8)] relative overflow-hidden">
+                    <div className="absolute top-0.5 left-1.5 w-4 h-1 bg-white rounded-full opacity-60 pointer-events-none" />
+                    {React.createElement(selected.icon, { size: 28, strokeWidth: 2.5 })}
                   </motion.div>
-                  <motion.h2 layoutId={`title-${selected.id}`} className="text-xl font-bold text-slate-800 tracking-tight">
+                  <motion.h2 layoutId={`title-${selected.id}`} className="text-2xl font-black text-slate-800 tracking-tight">
                     {selected.title}
                   </motion.h2>
                 </div>
                 <button
                   onClick={() => setSelectedId(null)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all hover:rotate-90"
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl bg-white border-2 border-slate-100 hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all hover:rotate-90 hover:scale-110 active:scale-95 shadow-[inset_0_3px_0_rgba(255,255,255,1),_0_4px_8px_rgba(0,0,0,0.05)]"
                 >
-                  <X size={18} />
+                  <X size={22} strokeWidth={3} />
                 </button>
               </div>
 

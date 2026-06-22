@@ -6,9 +6,21 @@ import { useSettings } from '../../context/SettingsContext';
 import { getT } from '../../i18n/translations';
 import toast from 'react-hot-toast';
 
+const THEMES = [
+  { id: 'indigo', name: 'Indigo (Default)', class: 'bg-indigo-500', border: 'ring-indigo-300' },
+  { id: 'violet', name: 'Violet', class: 'bg-violet-500', border: 'ring-violet-300' },
+  { id: 'emerald', name: 'Emerald', class: 'bg-emerald-500', border: 'ring-emerald-300' },
+  { id: 'rose', name: 'Rose', class: 'bg-rose-500', border: 'ring-rose-300' },
+  { id: 'amber', name: 'Amber', class: 'bg-amber-500', border: 'ring-amber-300' },
+  { id: 'blue', name: 'Blue', class: 'bg-blue-500', border: 'ring-blue-300' },
+  { id: 'cyan', name: 'Cyan', class: 'bg-cyan-500', border: 'ring-cyan-300' },
+  { id: 'fuchsia', name: 'Fuchsia', class: 'bg-fuchsia-500', border: 'ring-fuchsia-300' },
+  { id: 'orange', name: 'Orange', class: 'bg-orange-500', border: 'ring-orange-300' }
+];
+
 export function SettingsSection() {
   const { user, updateUser } = useAuth();
-  const { backgroundUrl, setBackgroundUrl, language, setLanguage } = useSettings();
+  const { backgroundUrl, setBackgroundUrl, language, setLanguage, themeColor, setThemeColor } = useSettings();
 
   const t = getT(language);
   const ts = t.settings;
@@ -25,6 +37,7 @@ export function SettingsSection() {
   const [appData, setAppData] = useState({
     backgroundUrl: backgroundUrl || '',
     language: language || 'es',
+    themeColor: themeColor || 'indigo',
   });
 
   const handleProfileChange = (e) => {
@@ -43,6 +56,7 @@ export function SettingsSection() {
   const handleSaveApp = () => {
     setBackgroundUrl(appData.backgroundUrl);
     setLanguage(appData.language); // This triggers re-render of everything using useSettings
+    setThemeColor(appData.themeColor);
     toast.success(t.settings.appearance.title + ' ' + 'guardado');
   };
 
@@ -157,6 +171,28 @@ export function SettingsSection() {
                       <option value="es">Español (Latinoamérica)</option>
                       <option value="en">English (US)</option>
                     </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-600 mb-3">
+                    <ImageIcon size={16} /> Color del Tema
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {THEMES.map(theme => (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => {
+                          setAppData({...appData, themeColor: theme.id});
+                          setThemeColor(theme.id);
+                        }}
+                        className={`w-10 h-10 rounded-full transition-all duration-300 shadow-sm flex items-center justify-center ${theme.class} ${appData.themeColor === theme.id ? `ring-4 ${theme.border} scale-110` : 'hover:scale-105'}`}
+                        title={theme.name}
+                      >
+                        {appData.themeColor === theme.id && <Check size={16} className="text-white" strokeWidth={3} />}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

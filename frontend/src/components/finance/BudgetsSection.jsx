@@ -268,7 +268,7 @@ export function BudgetsSection({ title }) {
           >
             <motion.div 
               initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
-              className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl"
+              className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-900 tracking-tight">New Budget Limit</h3>

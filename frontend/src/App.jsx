@@ -15,8 +15,8 @@ function MainApp() {
   return (
     <>
       <Toaster position="top-right" />
-      {/* Solid light background */}
-      <div className="fixed inset-0 w-full h-full bg-slate-100 -z-10" />
+      {/* Dynamic Theme Background */}
+      <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-indigo-300 via-indigo-100 to-indigo-200 -z-10 transition-colors duration-500" />
 
       {user ? <BentoLayout /> : <LoginScreen />}
     </>

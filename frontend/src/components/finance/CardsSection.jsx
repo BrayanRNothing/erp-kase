@@ -130,10 +130,10 @@ export function CardsSection({ title }) {
             className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -267,8 +267,8 @@ export function CardsSection({ title }) {
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-              className="bg-white border border-red-100 rounded-2xl p-6 shadow-2xl w-full max-w-sm"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white border border-red-100 rounded-2xl p-6 shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
             >
               <div className="flex items-center gap-3 mb-4 text-red-600">
                 <div className="p-2 bg-red-50 rounded-full">
@@ -309,8 +309,8 @@ export function CardsSection({ title }) {
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-              className={`bg-white border ${cardToToggle.isActive === false ? 'border-emerald-200 shadow-emerald-50' : 'border-amber-200 shadow-amber-50'} rounded-2xl p-6 shadow-2xl w-full max-w-sm`}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className={`bg-white border ${cardToToggle.isActive === false ? 'border-emerald-200 shadow-emerald-50' : 'border-amber-200 shadow-amber-50'} rounded-2xl p-6 shadow-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar`}
             >
               <div className={`flex items-center gap-3 mb-4 ${cardToToggle.isActive === false ? 'text-emerald-600' : 'text-amber-600'}`}>
                 <div className={`p-2 rounded-full ${cardToToggle.isActive === false ? 'bg-emerald-50' : 'bg-amber-50'}`}>

@@ -326,7 +326,7 @@ export function VaultSection({ title }) {
               initial={{ scale: 0.95, y: 10 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 10 }}
-              className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
             >
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="text-slate-900 font-bold text-lg flex items-center gap-2">

@@ -901,7 +901,7 @@ export function InvoiceSection({ title }) {
           {successModal.isOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSuccessModal({ isOpen: false, message: '' })} />
-              <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-8 rounded-3xl shadow-2xl w-full max-w-sm flex flex-col items-center text-center">
+              <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative bg-white border border-slate-200 p-8 rounded-3xl shadow-2xl w-full max-w-sm flex flex-col items-center text-center max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
                   <CheckCircle2 size={32} />
                 </div>

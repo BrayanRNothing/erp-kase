@@ -131,7 +131,7 @@ export default function KardexPanel({ item, onClose, onMovement }) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }} 
               animate={{ opacity: 1, scale: 1, y: 0 }} 
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm relative z-10 overflow-hidden flex flex-col"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-sm relative z-10 max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col"
             >
               <div className="p-6 text-center">
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmData.type === 'IN' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
